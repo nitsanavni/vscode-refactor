@@ -60,7 +60,7 @@ async function findAndRenameSymbol(
     const uri = vscode.Uri.file(filePath);
 
     // Open the file to ensure it's loaded and analyzed by language server
-    await vscode.window.showTextDocument(uri);
+    const document = await vscode.window.showTextDocument(uri);
 
     // Get all symbols in document
     const symbols = await vscode.commands.executeCommand<
@@ -80,6 +80,13 @@ async function findAndRenameSymbol(
     // Use the symbol's range start position for rename
     const position = targetSymbol.range.start;
     const renamed = await renameSymbol(uri, position, newName);
+
+    // Save all unsaved documents after successful rename
+    if (renamed) {
+      // Small delay to ensure WorkspaceEdit changes are applied
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await vscode.workspace.saveAll();
+    }
 
     return { found: true, renamed, symbolCount: symbols.length };
   } catch (error) {
