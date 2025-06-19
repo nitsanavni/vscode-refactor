@@ -1,44 +1,44 @@
 {
-  "name": "cosmic-zebra-refactor-2025",
-  "displayName": "Cosmic Zebra Refactor",
-  "description": "A unique minimal VSCode extension for refactoring experiments",
-  "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.101.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "*"
-  ],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "cosmic-zebra-refactor.quantumSplit",
-        "title": "Quantum Split Analysis"
-      }
-    ]
-  },
-  "scripts": {
-    "build": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --sourcemap=linked",
-    "build:watch": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --sourcemap=linked --watch",
-    "package": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --minify --production",
-    "lint": "biome check . --write --unsafe",
-    "format": "biome format . --write",
-    "typecheck": "tsgo --noEmit",
-    "test": "bun test",
-    "check": "bun run format && bun run lint && bun run typecheck"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
-    "@types/bun": "latest",
-    "@types/node": "20.x",
-    "@types/vscode": "^1.101.0",
-    "@typescript/native-preview": "^7.0.0-dev.20250619.1",
-    "@vscode/vsce": "^3.5.0",
-    "typescript": "^5.8.3"
-  },
-  "private": true
+	"name": "cosmic-zebra-refactor-2025",
+	"displayName": "Cosmic Zebra Refactor",
+	"description": "A unique minimal VSCode extension for refactoring experiments",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.101.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"*"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "cosmic-zebra-refactor.quantumSplit",
+				"title": "Quantum Split Analysis"
+			}
+		]
+	},
+	"scripts": {
+		"build": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --sourcemap=linked",
+		"build:watch": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --sourcemap=linked --watch",
+		"package": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --minify --production",
+		"lint": "biome check . --write --unsafe",
+		"format": "biome format . --write",
+		"typecheck": "tsgo --noEmit",
+		"test": "bun test",
+		"check": "bun run format && bun run lint && bun run typecheck"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.0",
+		"@types/bun": "latest",
+		"@types/node": "20.x",
+		"@types/vscode": "^1.101.0",
+		"@typescript/native-preview": "^7.0.0-dev.20250619.1",
+		"@vscode/vsce": "^3.5.0",
+		"typescript": "^5.8.3"
+	},
+	"private": true
 }
