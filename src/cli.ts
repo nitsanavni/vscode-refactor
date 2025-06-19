@@ -10,18 +10,21 @@ interface CliOptions {
 	command: string;
 }
 
-function parseCliArgs(args: string[]): { options: CliOptions; positionals: string[] } {
+function parseCliArgs(args: string[]): {
+	options: CliOptions;
+	positionals: string[];
+} {
 	const options: CliOptions = {
 		help: false,
 		port: "3141",
-		host: "localhost", 
+		host: "localhost",
 		command: "quantumSplit",
 	};
 	const positionals: string[] = [];
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
-		
+
 		if (arg === "-h" || arg === "--help") {
 			options.help = true;
 		} else if (arg === "-p" || arg === "--port") {
@@ -67,10 +70,10 @@ Examples:
 async function callExtension(host: string, port: string, command: string) {
 	const url = `http://${host}:${port}/${command}`;
 	const method = command === "health" ? "GET" : "POST";
-	
+
 	try {
 		console.log(`Calling ${method} ${url}`);
-		
+
 		const response = await fetch(url, {
 			method,
 			headers: {
@@ -84,7 +87,7 @@ async function callExtension(host: string, port: string, command: string) {
 
 		const result = await response.json();
 		console.log("Response:", JSON.stringify(result, null, 2));
-		
+
 		return result;
 	} catch (error) {
 		console.error("Error calling extension:", error);
