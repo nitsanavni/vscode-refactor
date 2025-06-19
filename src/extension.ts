@@ -1,5 +1,5 @@
+import * as http from "node:http";
 import * as vscode from "vscode";
-import * as http from "http";
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log("Cosmic Zebra Refactor extension activated!");

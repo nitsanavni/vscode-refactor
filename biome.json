@@ -1,0 +1,17 @@
+{
+	"files": {
+		"includes": [
+			"**",
+			"!**/dist/**",
+			"!**/src/extension.js",
+			"!**/src/extension.js.map"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true
+	}
+}

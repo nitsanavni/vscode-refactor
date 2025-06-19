@@ -38,3 +38,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Extension trigger files
 .cosmic-zebra-trigger
+
+# Generated/built files
+src/extension.js
+src/extension.js.map
