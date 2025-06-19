@@ -1,17 +1,18 @@
 {
-	"files": {
-		"includes": [
-			"**",
-			"!**/dist/**",
-			"!**/src/extension.js",
-			"!**/src/extension.js.map"
-		]
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab"
-	},
-	"linter": {
-		"enabled": true
-	}
+  "files": {
+    "includes": [
+      "**",
+      "!**/dist/**",
+      "!**/src/extension.js",
+      "!**/src/extension.js.map"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "enabled": true
+  }
 }
