@@ -21,9 +21,6 @@
       }
     ]
   },
-  "enabledApiProposals": [
-    "uriHandler"
-  ],
   "scripts": {
     "build": "bun run esbuild.js",
     "package": "bun run esbuild.js --production"

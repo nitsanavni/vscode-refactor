@@ -10,20 +10,6 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
 
-    const uriHandler = vscode.window.registerUriHandler({
-        handleUri(uri: vscode.Uri): vscode.ProviderResult<void> {
-            console.log('URI received:', uri.toString());
-            console.log('URI path:', uri.path);
-            console.log('URI query:', uri.query);
-            
-            if (uri.path === '/quantumSplit' || uri.path === 'quantumSplit') {
-                console.log('Triggering quantumSplit command via URI');
-                vscode.commands.executeCommand('cosmic-zebra-refactor.quantumSplit');
-            } else {
-                console.log('URI path did not match expected patterns');
-            }
-        }
-    });
 
     // HTTP server for CLI triggers
     const server = http.createServer((req, res) => {
@@ -51,8 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(
-        disposable, 
-        uriHandler,
+        disposable,
         { dispose: () => server.close() }
     );
 }
