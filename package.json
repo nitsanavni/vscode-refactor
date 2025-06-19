@@ -31,7 +31,9 @@
 		"test": "bun test",
 		"check": "bun run format && bun run lint && bun run typecheck",
 		"reinstall": "bun run build && bunx vsce package && code --install-extension *.vsix --force",
-		"trigger": "curl -X POST http://localhost:3141/quantumSplit"
+		"trigger": "curl -X POST http://localhost:3141/quantumSplit",
+		"cli": "bun run src/cli.ts",
+		"cli:help": "bun run src/cli.ts --help"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.0.0",
