@@ -5,6 +5,9 @@
 ```bash
 # Build, package, and install
 bun run build && bunx vsce package && code --install-extension cosmic-zebra-refactor-2025-0.0.1.vsix
+
+# Watch mode for development
+bun run build:watch
 ```
 
 ## CLI Integration
