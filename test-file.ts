@@ -1,28 +1,28 @@
 // Test file for symbol renaming functionality
 
-class Calculator {
+class MathCalculator {
   private value: number;
 
   constructor(initialValue: number = 0) {
     this.value = initialValue;
   }
 
-  add(number: number): Calculator {
+  add(number: number): MathCalculator {
     this.value += number;
     return this;
   }
 
-  subtract(number: number): Calculator {
+  subtract(number: number): MathCalculator {
     this.value -= number;
     return this;
   }
 
-  multiply(factor: number): Calculator {
+  multiply(factor: number): MathCalculator {
     this.value *= factor;
     return this;
   }
 
-  divide(divisor: number): Calculator {
+  divide(divisor: number): MathCalculator {
     if (divisor === 0) {
       throw new Error("Cannot divide by zero");
     }
@@ -39,8 +39,8 @@ class Calculator {
   }
 }
 
-function createCalculator(startValue?: number): Calculator {
-  return new Calculator(startValue);
+function createCalculator(startValue?: number): MathCalculator {
+  return new MathCalculator(startValue);
 }
 
 const myCalculator = createCalculator(10);
@@ -53,14 +53,14 @@ const result = myCalculator
 console.log("Result:", result);
 
 // Example usage with variables to rename
-const userName = "John Doe";
+const personName = "John Doe";
 const userAge = 30;
 
 function greetUser(name: string, age: number): string {
   return `Hello ${name}, you are ${age} years old!`;
 }
 
-const greeting = greetUser(userName, userAge);
+const greeting = greetUser(personName, userAge);
 console.log(greeting);
 
-export { Calculator, createCalculator, greetUser };
+export { MathCalculator as Calculator, createCalculator, greetUser };

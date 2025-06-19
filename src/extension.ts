@@ -59,6 +59,9 @@ async function findAndRenameSymbol(
     // Convert file path to URI
     const uri = vscode.Uri.file(filePath);
 
+    // Open the file to ensure it's loaded and analyzed by language server
+    await vscode.window.showTextDocument(uri);
+
     // Get all symbols in document
     const symbols = await vscode.commands.executeCommand<
       vscode.DocumentSymbol[]
