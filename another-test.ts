@@ -11,12 +11,12 @@ class DataProcessor {
   }
 
   processData(): any[] {
-    return this.items.map(item => ({ ...item, processed: true }));
+    return this.items.map((item) => ({ ...item, processed: true }));
   }
 }
 
 const processor = new DataProcessor();
 processor.addItem({ name: "test" });
-const result = processor.processData();
+const _result = processor.processData();
 
 export { DataProcessor };

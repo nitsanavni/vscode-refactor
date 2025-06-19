@@ -60,7 +60,7 @@ async function findAndRenameSymbol(
     const uri = vscode.Uri.file(filePath);
 
     // Open the file to ensure it's loaded and analyzed by language server
-    const document = await vscode.window.showTextDocument(uri);
+    const _document = await vscode.window.showTextDocument(uri);
 
     // Get all symbols in document
     const symbols = await vscode.commands.executeCommand<
@@ -74,13 +74,17 @@ async function findAndRenameSymbol(
     // Debug: Log all symbols found
     console.log(`Found ${symbols.length} symbols in ${filePath}:`);
     symbols.forEach((symbol, index) => {
-      console.log(`  ${index}: ${symbol.name} (${vscode.SymbolKind[symbol.kind]})`);
+      console.log(
+        `  ${index}: ${symbol.name} (${vscode.SymbolKind[symbol.kind]})`,
+      );
     });
 
     // Find the target symbol
     const targetSymbol = findSymbolByName(symbols, symbolName);
     if (!targetSymbol) {
-      console.log(`Target symbol "${symbolName}" not found among available symbols`);
+      console.log(
+        `Target symbol "${symbolName}" not found among available symbols`,
+      );
       return { found: false, renamed: false, symbolCount: symbols.length };
     }
 
@@ -92,8 +96,8 @@ async function findAndRenameSymbol(
 
     // Save the document after rename attempt
     // Small delay to ensure WorkspaceEdit changes are applied
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // Force save all documents
     await vscode.workspace.saveAll(false);
 
