@@ -3,9 +3,13 @@
   "workspaces": {
     "": {
       "name": "vscode-refactor",
+      "dependencies": {
+        "minimist": "^1.2.8",
+      },
       "devDependencies": {
         "@biomejs/biome": "^2.0.0",
         "@types/bun": "latest",
+        "@types/minimist": "^1.2.5",
         "@types/node": "20.x",
         "@types/vscode": "^1.101.0",
         "@typescript/native-preview": "^7.0.0-dev.20250619.1",
@@ -112,6 +116,8 @@
     "@textlint/types": ["@textlint/types@14.8.4", "", { "dependencies": { "@textlint/ast-node-types": "14.8.4" } }, "sha512-9nyY8vVXlr8hHKxa6+37omJhXWCwovMQcgMteuldYd4dOxGm14AK2nXdkgtKEUQnzLGaXy46xwLCfhQy7V7/YA=="],
 
     "@types/bun": ["@types/bun@1.2.16", "", { "dependencies": { "bun-types": "1.2.16" } }, "sha512-1aCZJ/6nSiViw339RsaNhkNoEloLaPzZhxMOYEa7OzRzO41IGg5n/7I43/ZIAW/c+Q6cT12Vf7fOZOoVIzb5BQ=="],
+
+    "@types/minimist": ["@types/minimist@1.2.5", "", {}, "sha512-hov8bUuiLiyFPGyFPE1lwWhmzYbirOXQNNo40+y3zow8aFVTeyn3VWL0VFFfdNddA8S4Vf0Tc062rzyNr7Paag=="],
 
     "@types/node": ["@types/node@20.19.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-jJD50LtlD2dodAEO653i3YF04NWak6jN3ky+Ri3Em3mGR39/glWiboM/IePaRbgwSfqM1TpGXfAg8ohn/4dTgA=="],
 

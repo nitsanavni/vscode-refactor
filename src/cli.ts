@@ -1,47 +1,24 @@
 #!/usr/bin/env bun
+import minimist from "minimist";
 
-// Parse command line arguments using Bun.argv
-const args = Bun.argv.slice(2);
-
-interface CliOptions {
-	help: boolean;
-	port: string;
-	host: string;
-	command: string;
-}
-
-function parseCliArgs(args: string[]): {
-	options: CliOptions;
-	positionals: string[];
-} {
-	const options: CliOptions = {
-		help: false,
+// Parse command line arguments using minimist
+const args = minimist(Bun.argv.slice(2), {
+	string: ["port", "host", "command"],
+	boolean: ["help"],
+	alias: {
+		h: "help",
+		p: "port",
+		c: "command",
+	},
+	default: {
 		port: "3141",
 		host: "localhost",
 		command: "quantumSplit",
-	};
-	const positionals: string[] = [];
+	},
+});
 
-	for (let i = 0; i < args.length; i++) {
-		const arg = args[i];
-
-		if (arg === "-h" || arg === "--help") {
-			options.help = true;
-		} else if (arg === "-p" || arg === "--port") {
-			options.port = args[++i] || options.port;
-		} else if (arg === "--host") {
-			options.host = args[++i] || options.host;
-		} else if (arg === "-c" || arg === "--command") {
-			options.command = args[++i] || options.command;
-		} else if (!arg.startsWith("-")) {
-			positionals.push(arg);
-		}
-	}
-
-	return { options, positionals };
-}
-
-const { options, positionals } = parseCliArgs(args);
+const { help, port, host, command } = args;
+const positionals = args._;
 
 function showHelp() {
 	console.log(`
@@ -96,16 +73,14 @@ async function callExtension(host: string, port: string, command: string) {
 }
 
 async function main() {
-	if (options.help) {
+	if (help) {
 		showHelp();
 		return;
 	}
 
-	const command = positionals[0] || options.command;
-	const host = options.host;
-	const port = options.port;
+	const cmd = positionals[0] || command;
 
-	await callExtension(host, port, command);
+	await callExtension(host, port, cmd);
 }
 
 main().catch(console.error);
