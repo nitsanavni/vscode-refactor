@@ -9,7 +9,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "*"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -19,6 +21,9 @@
       }
     ]
   },
+  "enabledApiProposals": [
+    "uriHandler"
+  ],
   "scripts": {
     "build": "bun run esbuild.js",
     "package": "bun run esbuild.js --production"

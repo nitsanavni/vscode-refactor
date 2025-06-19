@@ -1,11 +1,78 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as http from 'http';
 
 export function activate(context: vscode.ExtensionContext) {
+    console.log('Cosmic Zebra Refactor extension activated!');
+    
     const disposable = vscode.commands.registerCommand('cosmic-zebra-refactor.quantumSplit', () => {
+        console.log('quantumSplit command executed!');
         vscode.window.showInformationMessage('Quantum Split Analysis activated! 🦓⚡');
     });
 
-    context.subscriptions.push(disposable);
+    // File watcher for CLI triggers - use workspace root
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (workspaceRoot) {
+        const triggerPattern = new vscode.RelativePattern(workspaceRoot, '.cosmic-zebra-trigger');
+        const watcher = vscode.workspace.createFileSystemWatcher(triggerPattern);
+        
+        watcher.onDidCreate(() => {
+            console.log('Trigger file detected!');
+            vscode.commands.executeCommand('cosmic-zebra-refactor.quantumSplit');
+            // Clean up trigger file
+            const triggerFile = path.join(workspaceRoot, '.cosmic-zebra-trigger');
+            fs.unlink(triggerFile, () => {});
+        });
+        
+        context.subscriptions.push(watcher);
+    }
+
+    const uriHandler = vscode.window.registerUriHandler({
+        handleUri(uri: vscode.Uri): vscode.ProviderResult<void> {
+            console.log('URI received:', uri.toString());
+            console.log('URI path:', uri.path);
+            console.log('URI query:', uri.query);
+            
+            if (uri.path === '/quantumSplit' || uri.path === 'quantumSplit') {
+                console.log('Triggering quantumSplit command via URI');
+                vscode.commands.executeCommand('cosmic-zebra-refactor.quantumSplit');
+            } else {
+                console.log('URI path did not match expected patterns');
+            }
+        }
+    });
+
+    // HTTP server for CLI triggers
+    const server = http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'application/json');
+        
+        if (req.url === '/quantumSplit' && req.method === 'POST') {
+            console.log('HTTP trigger received for quantumSplit');
+            vscode.commands.executeCommand('cosmic-zebra-refactor.quantumSplit');
+            res.writeHead(200);
+            res.end(JSON.stringify({ success: true, message: 'Command executed' }));
+        } else if (req.url === '/health' && req.method === 'GET') {
+            res.writeHead(200);
+            res.end(JSON.stringify({ status: 'ok', extension: 'cosmic-zebra-refactor' }));
+        } else {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'Not found' }));
+        }
+    });
+
+    const port = 3141;
+    server.listen(port, 'localhost', () => {
+        console.log(`Cosmic Zebra Refactor HTTP server listening on port ${port}`);
+        vscode.window.showInformationMessage(`Extension HTTP server started on port ${port}`);
+    });
+
+    context.subscriptions.push(
+        disposable, 
+        uriHandler,
+        { dispose: () => server.close() }
+    );
 }
 
 export function deactivate() {}
