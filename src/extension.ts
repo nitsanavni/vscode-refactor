@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as http from 'http';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -11,22 +9,6 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('Quantum Split Analysis activated! 🦓⚡');
     });
 
-    // File watcher for CLI triggers - use workspace root
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (workspaceRoot) {
-        const triggerPattern = new vscode.RelativePattern(workspaceRoot, '.cosmic-zebra-trigger');
-        const watcher = vscode.workspace.createFileSystemWatcher(triggerPattern);
-        
-        watcher.onDidCreate(() => {
-            console.log('Trigger file detected!');
-            vscode.commands.executeCommand('cosmic-zebra-refactor.quantumSplit');
-            // Clean up trigger file
-            const triggerFile = path.join(workspaceRoot, '.cosmic-zebra-trigger');
-            fs.unlink(triggerFile, () => {});
-        });
-        
-        context.subscriptions.push(watcher);
-    }
 
     const uriHandler = vscode.window.registerUriHandler({
         handleUri(uri: vscode.Uri): vscode.ProviderResult<void> {
