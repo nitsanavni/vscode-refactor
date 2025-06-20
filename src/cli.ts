@@ -129,7 +129,7 @@ async function main() {
     await callExtension(host, port, "rename", payload);
   } else if (cmd === "extract") {
     const [, filePath, extractName, extractType] = positionals;
-    const selection = args["selection"];
+    const selection = args.selection;
 
     if (!filePath || !extractName || !extractType) {
       console.error(
@@ -168,7 +168,9 @@ async function main() {
     const result = await callExtension(host, port, "health");
     console.log(`Extension version: ${result.debugVersion}`);
     console.log(`Expected version: ${expectedVersion}`);
-    console.log(`Match: ${result.debugVersion === expectedVersion ? '✅' : '❌'}`);
+    console.log(
+      `Match: ${result.debugVersion === expectedVersion ? "✅" : "❌"}`,
+    );
   } else {
     await callExtension(host, port, cmd);
   }

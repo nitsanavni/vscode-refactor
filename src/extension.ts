@@ -117,9 +117,13 @@ async function extractVariable(
   variableName: string,
 ): Promise<boolean> {
   try {
-    console.log(`extractVariable: Starting extraction for variable "${variableName}"`);
-    console.log(`extractVariable: Range - start: ${range.start.line}:${range.start.character}, end: ${range.end.line}:${range.end.character}`);
-    
+    console.log(
+      `extractVariable: Starting extraction for variable "${variableName}"`,
+    );
+    console.log(
+      `extractVariable: Range - start: ${range.start.line}:${range.start.character}, end: ${range.end.line}:${range.end.character}`,
+    );
+
     // Get code actions for the range
     console.log(`extractVariable: Getting code actions for range`);
     const codeActions = await vscode.commands.executeCommand<
@@ -131,7 +135,9 @@ async function extractVariable(
       vscode.CodeActionKind.RefactorExtract.value,
     );
 
-    console.log(`extractVariable: Found ${codeActions?.length || 0} code actions`);
+    console.log(
+      `extractVariable: Found ${codeActions?.length || 0} code actions`,
+    );
     codeActions?.forEach((action, i) => {
       console.log(`extractVariable: Action ${i}: ${action.title}`);
     });
@@ -145,7 +151,9 @@ async function extractVariable(
     );
 
     if (extractAction) {
-      console.log(`extractVariable: Found extract action: ${extractAction.title}`);
+      console.log(
+        `extractVariable: Found extract action: ${extractAction.title}`,
+      );
       // Execute the extract action
       await vscode.commands.executeCommand(
         "vscode.executeCodeAction",
@@ -162,45 +170,15 @@ async function extractVariable(
   }
 }
 
-// Find range between start and end patterns
-async function findRangeByPatterns(
-  uri: vscode.Uri,
-  startsWith: string,
-  endsWith: string,
-): Promise<vscode.Range | null> {
-  try {
-    const document = await vscode.workspace.openTextDocument(uri);
-    const text = document.getText();
-
-    const startIndex = text.indexOf(startsWith);
-    if (startIndex === -1) {
-      console.log(`Start pattern "${startsWith}" not found`);
-      return null;
-    }
-
-    const endIndex = text.indexOf(endsWith, startIndex + startsWith.length);
-    if (endIndex === -1) {
-      console.log(`End pattern "${endsWith}" not found after start pattern`);
-      return null;
-    }
-
-    const startPos = document.positionAt(startIndex);
-    const endPos = document.positionAt(endIndex + endsWith.length);
-
-    return new vscode.Range(startPos, endPos);
-  } catch (error) {
-    console.error("Error finding range by patterns:", error);
-    return null;
-  }
-}
-
 // Find text in document and return range (single pattern)
 async function findTextInDocument(
   uri: vscode.Uri,
   searchText: string,
 ): Promise<vscode.Range | null> {
   try {
-    console.log(`findTextInDocument: Searching for "${searchText}" in ${uri.toString()}`);
+    console.log(
+      `findTextInDocument: Searching for "${searchText}" in ${uri.toString()}`,
+    );
     const document = await vscode.workspace.openTextDocument(uri);
     const text = document.getText();
     console.log(`findTextInDocument: Document content: "${text}"`);
@@ -214,92 +192,14 @@ async function findTextInDocument(
 
     const startPos = document.positionAt(index);
     const endPos = document.positionAt(index + searchText.length);
-    console.log(`findTextInDocument: Range found - start: ${startPos.line}:${startPos.character}, end: ${endPos.line}:${endPos.character}`);
+    console.log(
+      `findTextInDocument: Range found - start: ${startPos.line}:${startPos.character}, end: ${endPos.line}:${endPos.character}`,
+    );
 
     return new vscode.Range(startPos, endPos);
   } catch (error) {
     console.error("Error finding text in document:", error);
     return null;
-  }
-}
-
-// Extract function/method by name
-async function _extractFunctionByName(
-  uri: vscode.Uri,
-  functionName: string,
-  newMethodName: string,
-): Promise<boolean> {
-  try {
-    // Get all symbols in document
-    const symbols = await vscode.commands.executeCommand<
-      vscode.DocumentSymbol[]
-    >("vscode.executeDocumentSymbolProvider", uri);
-
-    if (!symbols) {
-      return false;
-    }
-
-    // Find the function symbol
-    const targetSymbol = findSymbolByName(symbols, functionName);
-    if (!targetSymbol || targetSymbol.kind !== vscode.SymbolKind.Function) {
-      console.log(`Function "${functionName}" not found`);
-      return false;
-    }
-
-    // Extract the entire function
-    return await extractMethod(uri, targetSymbol.range, newMethodName);
-  } catch (error) {
-    console.error("Error in extractFunctionByName:", error);
-    return false;
-  }
-}
-
-// Extract code by range patterns
-async function extractByRange(
-  filePath: string,
-  startsWith: string,
-  endsWith: string,
-  extractName: string,
-  extractType: "method" | "variable",
-): Promise<{ success: boolean; message: string }> {
-  try {
-    const uri = vscode.Uri.file(filePath);
-    await vscode.window.showTextDocument(uri);
-
-    // Find the range using start/end patterns
-    const range = await findRangeByPatterns(uri, startsWith, endsWith);
-    if (!range) {
-      return {
-        success: false,
-        message: `Range not found: "${startsWith}" to "${endsWith}"`,
-      };
-    }
-
-    console.log(`Found range from "${startsWith}" to "${endsWith}"`);
-
-    let success = false;
-    if (extractType === "method") {
-      success = await extractMethod(uri, range, extractName);
-    } else if (extractType === "variable") {
-      success = await extractVariable(uri, range, extractName);
-    }
-
-    // Save after extraction
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await vscode.workspace.saveAll(false);
-
-    return {
-      success,
-      message: success
-        ? `Successfully extracted ${extractType} "${extractName}" from range`
-        : `Failed to extract ${extractType} "${extractName}" from range`,
-    };
-  } catch (error) {
-    console.error("Error in extractByRange:", error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : String(error),
-    };
   }
 }
 
@@ -311,8 +211,10 @@ async function extractBySelection(
   extractType: "method" | "variable",
 ): Promise<{ success: boolean; message: string }> {
   try {
-    console.log(`extractBySelection called with: filePath=${filePath}, selection="${selection}", extractName="${extractName}", extractType="${extractType}"`);
-    
+    console.log(
+      `extractBySelection called with: filePath=${filePath}, selection="${selection}", extractName="${extractName}", extractType="${extractType}"`,
+    );
+
     const uri = vscode.Uri.file(filePath);
     console.log(`Opening document: ${uri.toString()}`);
     await vscode.window.showTextDocument(uri);
@@ -328,7 +230,9 @@ async function extractBySelection(
       };
     }
 
-    console.log(`Found selection at range: ${range.start.line}:${range.start.character} to ${range.end.line}:${range.end.character}`);
+    console.log(
+      `Found selection at range: ${range.start.line}:${range.start.character} to ${range.end.line}:${range.end.character}`,
+    );
 
     let success = false;
     if (extractType === "method") {
@@ -353,55 +257,6 @@ async function extractBySelection(
     };
   } catch (error) {
     console.error("Error in extractBySelection:", error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
-// Main extract function that handles both method and variable extraction
-async function performExtraction(
-  filePath: string,
-  startLine: number,
-  startChar: number,
-  endLine: number,
-  endChar: number,
-  extractName: string,
-  extractType: "method" | "variable",
-): Promise<{ success: boolean; message: string }> {
-  try {
-    // Convert file path to URI
-    const uri = vscode.Uri.file(filePath);
-
-    // Open the file to ensure it's loaded
-    await vscode.window.showTextDocument(uri);
-
-    // Create range from coordinates
-    const range = new vscode.Range(
-      new vscode.Position(startLine, startChar),
-      new vscode.Position(endLine, endChar),
-    );
-
-    let success = false;
-    if (extractType === "method") {
-      success = await extractMethod(uri, range, extractName);
-    } else if (extractType === "variable") {
-      success = await extractVariable(uri, range, extractName);
-    }
-
-    // Save after extraction
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await vscode.workspace.saveAll(false);
-
-    return {
-      success,
-      message: success
-        ? `Successfully extracted ${extractType} "${extractName}"`
-        : `Failed to extract ${extractType} "${extractName}"`,
-    };
-  } catch (error) {
-    console.error("Error in performExtraction:", error);
     return {
       success: false,
       message: error instanceof Error ? error.message : String(error),
@@ -542,13 +397,15 @@ export function activate(context: vscode.ExtensionContext) {
 
       req.on("end", async () => {
         try {
-          const { filePath, extractName, extractType, selection } = JSON.parse(body);
+          const { filePath, extractName, extractType, selection } =
+            JSON.parse(body);
 
           if (!filePath || !extractName || !extractType || !selection) {
             res.writeHead(400);
             res.end(
               JSON.stringify({
-                error: "Missing required fields: filePath, extractName, extractType, selection",
+                error:
+                  "Missing required fields: filePath, extractName, extractType, selection",
               }),
             );
             return;
@@ -564,7 +421,12 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          const result = await extractBySelection(filePath, selection, extractName, extractType);
+          const result = await extractBySelection(
+            filePath,
+            selection,
+            extractName,
+            extractType,
+          );
 
           res.writeHead(200);
           res.end(
@@ -586,10 +448,10 @@ export function activate(context: vscode.ExtensionContext) {
     } else if (req.url === "/health" && req.method === "GET") {
       res.writeHead(200);
       res.end(
-        JSON.stringify({ 
-          status: "ok", 
+        JSON.stringify({
+          status: "ok",
           extension: "cosmic-zebra-refactor",
-          debugVersion
+          debugVersion,
         }),
       );
     } else {
@@ -600,7 +462,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   const port = 3141;
   server.listen(port, "localhost", () => {
-    console.log(`Cosmic Zebra Refactor HTTP server listening on port ${port} (debug v${debugVersion})`);
+    console.log(
+      `Cosmic Zebra Refactor HTTP server listening on port ${port} (debug v${debugVersion})`,
+    );
     vscode.window.showInformationMessage(
       `Extension HTTP server started on port ${port} (debug v${debugVersion})`,
     );
