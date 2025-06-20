@@ -11,11 +11,11 @@ class Shop {
     this.items = items;
   }
   updateQuality() {
-    for (const item of this.items) newFunction(item);
+    for (const item of this.items) updateItemQuality(item);
 
     return this.items;
 
-    function newFunction(item) {
+    function updateItemQuality(item) {
       if (
         item.name !== "Aged Brie" &&
         item.name !== "Backstage passes to a TAFKAL80ETC concert"
