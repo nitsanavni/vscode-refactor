@@ -357,6 +357,117 @@ async function getAvailableActions(
   }
 }
 
+// Perform a specific code action by kind
+async function performAction(
+  filePath: string,
+  selection: string,
+  actionKind: string,
+): Promise<{ success: boolean; message: string; actionFound: boolean }> {
+  try {
+    console.log(
+      `performAction called with: filePath=${filePath}, selection="${selection}", actionKind="${actionKind}"`,
+    );
+
+    const uri = vscode.Uri.file(filePath);
+    console.log(`Opening document: ${uri.toString()}`);
+    await vscode.window.showTextDocument(uri);
+
+    // Find the selection text in the document
+    console.log(`Searching for selection text: "${selection}"`);
+    const range = await findTextInDocument(uri, selection);
+    if (!range) {
+      console.log(`Selection "${selection}" not found in document`);
+      return {
+        success: false,
+        message: `Selection "${selection}" not found in file`,
+        actionFound: false,
+      };
+    }
+
+    console.log(
+      `Found selection at range: ${range.start.line}:${range.start.character} to ${range.end.line}:${range.end.character}`,
+    );
+
+    // Get all available code actions for the range
+    console.log(`Getting code actions for range`);
+    const allCodeActions = await vscode.commands.executeCommand<
+      vscode.CodeAction[]
+    >("vscode.executeCodeActionProvider", uri, range);
+
+    console.log(`Found ${allCodeActions?.length || 0} total code actions`);
+
+    // Find the action with matching kind
+    const targetAction = allCodeActions?.find(
+      (action) => action.kind?.value === actionKind,
+    );
+
+    if (!targetAction) {
+      console.log(`Action with kind "${actionKind}" not found`);
+      const availableKinds =
+        allCodeActions?.map((action) => action.kind?.value).filter(Boolean) ||
+        [];
+      return {
+        success: false,
+        message: `Action with kind "${actionKind}" not found. Available kinds: ${availableKinds.join(", ")}`,
+        actionFound: false,
+      };
+    }
+
+    console.log(`Found target action: ${targetAction.title}`);
+
+    // Execute the action
+    if (targetAction.edit) {
+      console.log(`Applying WorkspaceEdit directly`);
+      const success = await vscode.workspace.applyEdit(targetAction.edit);
+      console.log(`WorkspaceEdit applied: ${success}`);
+
+      if (success) {
+        // Save after successful edit
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await vscode.workspace.saveAll(false);
+      }
+
+      return {
+        success,
+        message: success
+          ? `Successfully executed action "${targetAction.title}"`
+          : `Failed to apply edit for action "${targetAction.title}"`,
+        actionFound: true,
+      };
+    } else if (targetAction.command) {
+      console.log(`Executing command: ${targetAction.command.command}`);
+      await vscode.commands.executeCommand(
+        targetAction.command.command,
+        ...(targetAction.command.arguments || []),
+      );
+
+      // Save after command execution
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await vscode.workspace.saveAll(false);
+
+      return {
+        success: true,
+        message: `Successfully executed action "${targetAction.title}"`,
+        actionFound: true,
+      };
+    } else {
+      console.log(`Action has no edit or command to execute`);
+      return {
+        success: false,
+        message: `Action "${targetAction.title}" has no executable edit or command`,
+        actionFound: true,
+      };
+    }
+  } catch (error) {
+    console.error("Error in performAction:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : String(error),
+      actionFound: false,
+    };
+  }
+}
+
 // Simple selection-based extraction
 async function extractBySelection(
   filePath: string,
@@ -630,6 +741,49 @@ export function activate(context: vscode.ExtensionContext) {
           );
         } catch (error) {
           console.error("Actions error:", error);
+          res.writeHead(500);
+          res.end(
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          );
+        }
+      });
+    } else if (req.url === "/perform-action" && req.method === "POST") {
+      console.log("HTTP trigger received for perform-action");
+
+      let body = "";
+      req.on("data", (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on("end", async () => {
+        try {
+          const { filePath, selection, actionKind } = JSON.parse(body);
+
+          if (!filePath || !selection || !actionKind) {
+            res.writeHead(400);
+            res.end(
+              JSON.stringify({
+                error:
+                  "Missing required fields: filePath, selection, actionKind",
+              }),
+            );
+            return;
+          }
+
+          const result = await performAction(filePath, selection, actionKind);
+
+          res.writeHead(200);
+          res.end(
+            JSON.stringify({
+              success: result.success,
+              message: result.message,
+              actionFound: result.actionFound,
+            }),
+          );
+        } catch (error) {
+          console.error("Perform action error:", error);
           res.writeHead(500);
           res.end(
             JSON.stringify({

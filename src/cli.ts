@@ -19,15 +19,22 @@ interface ActionsPayload {
   selection: string;
 }
 
+interface PerformActionPayload {
+  filePath: string;
+  selection: string;
+  actionKind: string;
+}
+
 // Parse command line arguments using minimist
 const args = minimist(Bun.argv.slice(2), {
-  string: ["port", "host", "command", "selection"],
+  string: ["port", "host", "command", "selection", "kind"],
   boolean: ["help"],
   alias: {
     h: "help",
     p: "port",
     c: "command",
     s: "selection",
+    k: "kind",
   },
   default: {
     port: "3141",
@@ -50,6 +57,8 @@ Options:
   -p, --port <port>       Extension HTTP server port (default: 3141)
   --host <host>           Extension HTTP server host (default: localhost)
   -c, --command <cmd>     Command to execute (default: quantumSplit)
+  -s, --selection <text>  Text selection for refactoring commands
+  -k, --kind <kind>       Action kind for perform-action command
 
 Commands:
   quantumSplit           Trigger quantum split analysis
@@ -58,6 +67,7 @@ Commands:
   rename <file> <old> <new>    Rename symbol in file
   extract <file> <type> --selection <text>    Extract method or variable
   actions <file> --selection <text>    Get available code actions for selection
+  perform-action <file> --selection <text> --kind <kind>    Execute specific action by kind
 
 Examples:
   bun run cli                           # Execute quantumSplit command
@@ -68,6 +78,7 @@ Examples:
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
   bun run cli extract ultra-simple.js variable --selection "0"  # Extract "0" to variable
   bun run cli actions ultra-simple.js --selection "0"  # Get available actions for "0"
+  bun run cli perform-action ultra-simple.js --selection "0" --kind "refactor.extract.constant"  # Extract "0" to constant
 `);
 }
 
@@ -75,7 +86,11 @@ async function callExtension(
   host: string,
   port: string,
   command: string,
-  payload?: RenamePayload | ExtractPayload | ActionsPayload,
+  payload?:
+    | RenamePayload
+    | ExtractPayload
+    | ActionsPayload
+    | PerformActionPayload,
 ) {
   const url = `http://${host}:${port}/${command}`;
   const method = command === "health" ? "GET" : "POST";
@@ -194,6 +209,45 @@ async function main() {
     };
 
     await callExtension(host, port, "actions", payload);
+  } else if (cmd === "perform-action") {
+    const [, filePath] = positionals;
+    const selection = args.selection;
+    const actionKind = args.kind;
+
+    if (!filePath) {
+      console.error("Error: perform-action command requires <file> argument");
+      console.log(
+        "Usage: bun run cli perform-action <file> --selection <text> --kind <kind>",
+      );
+      process.exit(1);
+    }
+
+    if (!selection) {
+      console.error("Error: --selection <text> is required");
+      console.log(
+        "Usage: bun run cli perform-action <file> --selection <text> --kind <kind>",
+      );
+      process.exit(1);
+    }
+
+    if (!actionKind) {
+      console.error("Error: --kind <kind> is required");
+      console.log(
+        "Usage: bun run cli perform-action <file> --selection <text> --kind <kind>",
+      );
+      console.log(
+        "Example kinds: refactor.extract.constant, refactor.extract.function, refactor.surround",
+      );
+      process.exit(1);
+    }
+
+    const payload: PerformActionPayload = {
+      filePath: resolveFilePath(filePath),
+      selection,
+      actionKind,
+    };
+
+    await callExtension(host, port, "perform-action", payload);
   } else if (cmd === "check-version") {
     const expectedVersion = positionals[1] ? parseInt(positionals[1]) : 6;
     const result = (await callExtension(host, port, "health")) as {
