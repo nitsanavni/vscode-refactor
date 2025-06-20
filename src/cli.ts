@@ -136,7 +136,7 @@ function resolveFilePath(filePath: string): string {
 async function main() {
   // Handle stdin reading at the start
   if (hasStdin) {
-    stdinInput = await new Response(process.stdin).text();
+    stdinInput = await Bun.stdin.text();
     stdinInput = stdinInput.trim();
   }
   if (help) {
