@@ -84,6 +84,7 @@ Examples:
   bun run cli actions ultra-simple.js --selection "0"  # Get available actions for "0"
   echo "const x = 1;" | bun run cli actions ultra-simple.js  # Use piped text as selection
   bun run cli perform-action ultra-simple.js --selection "0" --kind "refactor.extract.constant"  # Extract "0" to constant
+  echo "0" | bun run cli perform-action ultra-simple.js --kind "refactor.extract.constant"  # Extract "0" to constant using stdin
 `);
 }
 
@@ -232,8 +233,18 @@ async function main() {
     await callExtension(host, port, "actions", payload);
   } else if (cmd === "perform-action") {
     const [, filePath] = positionals;
-    const selection = args.selection;
+    let selection = args.selection;
     const actionKind = args.kind;
+
+    if (hasStdin && stdinInput) {
+      // Handle stdin input case - the piped text IS the selection
+      if (!filePath) {
+        console.error("Error: file argument required when using stdin as selection");
+        console.log("Usage: echo 'selection' | bun run cli perform-action <file> --kind <kind>");
+        process.exit(1);
+      }
+      selection = stdinInput;
+    }
 
     if (!filePath) {
       console.error("Error: perform-action command requires <file> argument");
