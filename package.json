@@ -49,6 +49,7 @@
   },
   "private": true,
   "dependencies": {
+    "@ast-grep/napi": "^0.38.5",
     "minimist": "^1.2.8"
   }
 }

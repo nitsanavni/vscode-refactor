@@ -1,0 +1,7 @@
+id: gilded-rose-for-body
+language: javascript
+rule:
+  all:
+    - kind: statement_block
+    - inside:
+        kind: for_statement
