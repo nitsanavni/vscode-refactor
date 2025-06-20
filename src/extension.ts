@@ -435,7 +435,48 @@ async function performAction(
         actionFound: true,
       };
     } else if (targetAction.command) {
-      console.log(`Executing command: ${targetAction.command.command}`);
+      console.log(
+        `Action has command but no direct edit, trying to resolve first`,
+      );
+
+      // Try to resolve the CodeAction to get the actual edit (like extractVariable does)
+      const resolvedActions = await vscode.commands.executeCommand<
+        vscode.CodeAction[]
+      >(
+        "vscode.executeCodeActionProvider",
+        uri,
+        range,
+        vscode.CodeActionKind.RefactorExtract.value,
+        1, // itemResolveCount - resolve the first action
+      );
+
+      const resolvedAction = resolvedActions?.find(
+        (action) => action.kind?.value === actionKind,
+      );
+
+      if (resolvedAction?.edit) {
+        console.log(`Found resolved edit, applying WorkspaceEdit`);
+        const success = await vscode.workspace.applyEdit(resolvedAction.edit);
+        console.log(`Resolved WorkspaceEdit applied: ${success}`);
+
+        if (success) {
+          // Save after successful edit
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          await vscode.workspace.saveAll(false);
+        }
+
+        return {
+          success,
+          message: success
+            ? `Successfully executed action "${targetAction.title}"`
+            : `Failed to apply resolved edit for action "${targetAction.title}"`,
+          actionFound: true,
+        };
+      }
+
+      console.log(
+        `No resolved edit found, executing command as fallback: ${targetAction.command.command}`,
+      );
       await vscode.commands.executeCommand(
         targetAction.command.command,
         ...(targetAction.command.arguments || []),
