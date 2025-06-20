@@ -1,0 +1,7 @@
+id: for-body-with-braces
+language: javascript
+rule:
+  all:
+    - kind: statement_block
+    - inside:
+        kind: for_statement

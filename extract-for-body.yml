@@ -2,6 +2,12 @@ id: gilded-rose-for-body
 language: javascript
 rule:
   all:
-    - kind: statement_block
+    - any:
+        - kind: variable_declaration
+        - kind: if_statement
+        - kind: expression_statement
     - inside:
-        kind: for_statement
+        all:
+          - kind: statement_block
+          - inside:
+              kind: for_statement
