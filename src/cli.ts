@@ -9,7 +9,6 @@ interface RenamePayload {
 
 interface ExtractPayload {
   filePath: string;
-  extractName: string;
   extractType: "method" | "variable";
   selection: string;
 }
@@ -51,7 +50,7 @@ Commands:
   health                Check extension health status
   check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
-  extract <file> <name> <type> --selection <text>    Extract method or variable
+  extract <file> <type> --selection <text>    Extract method or variable
 
 Examples:
   bun run cli                           # Execute quantumSplit command
@@ -60,7 +59,7 @@ Examples:
   bun run cli -p 3142 quantumSplit      # Use custom port
   bun run cli --command health          # Execute health command
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
-  bun run cli extract ultra-simple.js b variable --selection "0"  # Extract "0" to variable "b"
+  bun run cli extract ultra-simple.js variable --selection "0"  # Extract "0" to variable
 `);
 }
 
@@ -128,15 +127,13 @@ async function main() {
 
     await callExtension(host, port, "rename", payload);
   } else if (cmd === "extract") {
-    const [, filePath, extractName, extractType] = positionals;
+    const [, filePath, extractType] = positionals;
     const selection = args.selection;
 
-    if (!filePath || !extractName || !extractType) {
-      console.error(
-        "Error: extract command requires <file> <name> <type> arguments",
-      );
+    if (!filePath || !extractType) {
+      console.error("Error: extract command requires <file> <type> arguments");
       console.log(
-        "Usage: bun run cli extract <file> <name> <type> --selection <text>",
+        "Usage: bun run cli extract <file> <type> --selection <text>",
       );
       console.log("Type must be 'method' or 'variable'");
       process.exit(1);
@@ -150,14 +147,13 @@ async function main() {
     if (!selection) {
       console.error("Error: --selection <text> is required");
       console.log(
-        "Usage: bun run cli extract <file> <name> <type> --selection <text>",
+        "Usage: bun run cli extract <file> <type> --selection <text>",
       );
       process.exit(1);
     }
 
     const payload: ExtractPayload = {
       filePath,
-      extractName,
       extractType: extractType as "method" | "variable",
       selection,
     };

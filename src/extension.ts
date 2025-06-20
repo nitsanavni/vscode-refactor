@@ -257,12 +257,11 @@ async function findTextInDocument(
 async function extractBySelection(
   filePath: string,
   selection: string,
-  extractName: string,
   extractType: "method" | "variable",
 ): Promise<{ success: boolean; message: string }> {
   try {
     console.log(
-      `extractBySelection called with: filePath=${filePath}, selection="${selection}", extractName="${extractName}", extractType="${extractType}"`,
+      `extractBySelection called with: filePath=${filePath}, selection="${selection}", extractType="${extractType}"`,
     );
 
     const uri = vscode.Uri.file(filePath);
@@ -286,11 +285,11 @@ async function extractBySelection(
 
     let success = false;
     if (extractType === "method") {
-      console.log(`Attempting to extract method "${extractName}"`);
-      success = await extractMethod(uri, range, extractName);
+      console.log(`Attempting to extract method`);
+      success = await extractMethod(uri, range, "extractedMethod");
     } else if (extractType === "variable") {
-      console.log(`Attempting to extract variable "${extractName}"`);
-      success = await extractVariable(uri, range, extractName);
+      console.log(`Attempting to extract variable`);
+      success = await extractVariable(uri, range, "extractedVariable");
     }
 
     console.log(`Extraction result: ${success}`);
@@ -302,8 +301,8 @@ async function extractBySelection(
     return {
       success,
       message: success
-        ? `Successfully extracted ${extractType} "${extractName}" from selection "${selection}"`
-        : `Failed to extract ${extractType} "${extractName}" from selection "${selection}"`,
+        ? `Successfully extracted ${extractType} from selection "${selection}"`
+        : `Failed to extract ${extractType} from selection "${selection}"`,
     };
   } catch (error) {
     console.error("Error in extractBySelection:", error);
@@ -447,15 +446,14 @@ export function activate(context: vscode.ExtensionContext) {
 
       req.on("end", async () => {
         try {
-          const { filePath, extractName, extractType, selection } =
-            JSON.parse(body);
+          const { filePath, extractType, selection } = JSON.parse(body);
 
-          if (!filePath || !extractName || !extractType || !selection) {
+          if (!filePath || !extractType || !selection) {
             res.writeHead(400);
             res.end(
               JSON.stringify({
                 error:
-                  "Missing required fields: filePath, extractName, extractType, selection",
+                  "Missing required fields: filePath, extractType, selection",
               }),
             );
             return;
@@ -474,7 +472,6 @@ export function activate(context: vscode.ExtensionContext) {
           const result = await extractBySelection(
             filePath,
             selection,
-            extractName,
             extractType,
           );
 
