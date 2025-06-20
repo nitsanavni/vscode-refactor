@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-import minimist from "minimist";
 import { resolve } from "node:path";
+import minimist from "minimist";
 
 interface RenamePayload {
   filePath: string;
