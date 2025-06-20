@@ -55,12 +55,14 @@ Options:
 Commands:
   quantumSplit           Trigger quantum split analysis
   health                Check extension health status
+  check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
   extract <file> <name> <type> --starts-with <pattern> --ends-with <pattern>    Extract method or variable
 
 Examples:
   bun run cli                           # Execute quantumSplit command
   bun run cli health                    # Check health status
+  bun run cli check-version             # Check extension version
   bun run cli -p 3142 quantumSplit      # Use custom port
   bun run cli --command health          # Execute health command
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
@@ -172,6 +174,12 @@ async function main() {
     };
 
     await callExtension(host, port, "extract", payload);
+  } else if (cmd === "check-version") {
+    const expectedVersion = positionals[1] ? parseInt(positionals[1]) : 6;
+    const result = await callExtension(host, port, "health");
+    console.log(`Extension version: ${result.debugVersion}`);
+    console.log(`Expected version: ${expectedVersion}`);
+    console.log(`Match: ${result.debugVersion === expectedVersion ? '✅' : '❌'}`);
   } else {
     await callExtension(host, port, cmd);
   }

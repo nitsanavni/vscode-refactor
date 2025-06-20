@@ -486,7 +486,7 @@ async function findAndRenameSymbol(
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Cosmic Zebra Refactor extension activated!");
-  const debugVersion = 5;
+  const debugVersion = 6;
 
   const disposable = vscode.commands.registerCommand(
     "cosmic-zebra-refactor.quantumSplit",
@@ -552,23 +552,39 @@ export function activate(context: vscode.ExtensionContext) {
     } else if (req.url === "/extract" && req.method === "POST") {
       console.log("HTTP trigger received for extract");
 
-      // HARDCODED TEST: Extract "5 + 3" from simple-test.js
+      // HARDCODED TEST: Extract "0" from ultra-simple.js
       try {
-        const filePath = "/Users/nitsanavni/code/lab/vscode-refactor/simple-test.js";
+        const filePath = "/Users/nitsanavni/code/lab/vscode-refactor/ultra-simple.js";
         const uri = vscode.Uri.file(filePath);
         
         // Open the file
         await vscode.window.showTextDocument(uri);
         
-        // Hardcode the range for "5 + 3" - line 0, chars 10-15
-        const range = new vscode.Range(
-          new vscode.Position(0, 10), // start of "5 + 3"
-          new vscode.Position(0, 15)  // end of "5 + 3"
-        );
+        // Find "0" in the text
+        const document = await vscode.workspace.openTextDocument(uri);
+        const text = document.getText();
+        const targetText = "0";
+        const index = text.indexOf(targetText);
         
-        console.log("Attempting to extract '5 + 3' from simple-test.js");
+        if (index === -1) {
+          res.writeHead(200);
+          res.end(
+            JSON.stringify({
+              success: false,
+              message: `Text "${targetText}" not found in file`,
+              hardcoded: true
+            }),
+          );
+          return;
+        }
         
-        const success = await extractVariable(uri, range, "sum");
+        const startPos = document.positionAt(index);
+        const endPos = document.positionAt(index + targetText.length);
+        const range = new vscode.Range(startPos, endPos);
+        
+        console.log(`Attempting to extract '${targetText}' from ultra-simple.js`);
+        
+        const success = await extractVariable(uri, range, "zero");
         
         await new Promise((resolve) => setTimeout(resolve, 500));
         await vscode.workspace.saveAll(false);
@@ -577,8 +593,10 @@ export function activate(context: vscode.ExtensionContext) {
         res.end(
           JSON.stringify({
             success,
-            message: success ? "Successfully extracted hardcoded range" : "Failed to extract hardcoded range",
-            hardcoded: true
+            message: success ? `Successfully extracted '${targetText}' as variable 'zero'` : `Failed to extract '${targetText}'`,
+            hardcoded: true,
+            targetText,
+            range: { start: startPos, end: endPos }
           }),
         );
       } catch (error) {
