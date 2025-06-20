@@ -1,5 +1,6 @@
 import * as http from "node:http";
 import * as vscode from "vscode";
+import { debugVersion } from "./version";
 
 // Helper function to find symbol by name in document symbols
 function findSymbolByName(
@@ -63,7 +64,7 @@ async function extractMethod(
       "vscode.executeCodeActionProvider",
       uri,
       range,
-      vscode.CodeActionKind.Refactor,
+      vscode.CodeActionKind.RefactorExtract.value,
     );
 
     // Find extract method action
@@ -116,24 +117,35 @@ async function extractVariable(
   variableName: string,
 ): Promise<boolean> {
   try {
+    console.log(`extractVariable: Starting extraction for variable "${variableName}"`);
+    console.log(`extractVariable: Range - start: ${range.start.line}:${range.start.character}, end: ${range.end.line}:${range.end.character}`);
+    
     // Get code actions for the range
+    console.log(`extractVariable: Getting code actions for range`);
     const codeActions = await vscode.commands.executeCommand<
       vscode.CodeAction[]
     >(
       "vscode.executeCodeActionProvider",
       uri,
       range,
-      vscode.CodeActionKind.Refactor,
+      vscode.CodeActionKind.RefactorExtract.value,
     );
 
-    // Find extract variable action
+    console.log(`extractVariable: Found ${codeActions?.length || 0} code actions`);
+    codeActions?.forEach((action, i) => {
+      console.log(`extractVariable: Action ${i}: ${action.title}`);
+    });
+
+    // Find extract action - look for "Extract to constant in enclosing scope"
     const extractAction = codeActions?.find(
       (action) =>
         action.title.toLowerCase().includes("extract") &&
-        action.title.toLowerCase().includes("variable"),
+        action.title.toLowerCase().includes("constant") &&
+        action.title.toLowerCase().includes("enclosing"),
     );
 
     if (extractAction) {
+      console.log(`extractVariable: Found extract action: ${extractAction.title}`);
       // Execute the extract action
       await vscode.commands.executeCommand(
         "vscode.executeCodeAction",
@@ -142,28 +154,8 @@ async function extractVariable(
       return true;
     }
 
-    // Fallback: manual extraction if no code action available
-    const document = await vscode.workspace.openTextDocument(uri);
-    const selectedText = document.getText(range);
-
-    if (!selectedText.trim()) {
-      return false;
-    }
-
-    // Create manual extraction
-    const edit = new vscode.WorkspaceEdit();
-
-    // Replace selected expression with variable reference
-    edit.replace(uri, range, variableName);
-
-    // Add variable declaration before the line
-    const line = document.lineAt(range.start.line);
-    const insertPosition = new vscode.Position(range.start.line, 0);
-    const variableDeclaration = `${line.text.match(/^\s*/)?.[0] || ""}const ${variableName} = ${selectedText};\n`;
-    edit.insert(uri, insertPosition, variableDeclaration);
-
-    const success = await vscode.workspace.applyEdit(edit);
-    return success;
+    console.log(`extractVariable: No extract variable/constant action found`);
+    return false;
   } catch (error) {
     console.error("Error in extractVariable:", error);
     return false;
@@ -208,16 +200,21 @@ async function findTextInDocument(
   searchText: string,
 ): Promise<vscode.Range | null> {
   try {
+    console.log(`findTextInDocument: Searching for "${searchText}" in ${uri.toString()}`);
     const document = await vscode.workspace.openTextDocument(uri);
     const text = document.getText();
+    console.log(`findTextInDocument: Document content: "${text}"`);
 
     const index = text.indexOf(searchText);
+    console.log(`findTextInDocument: Index of "${searchText}": ${index}`);
     if (index === -1) {
+      console.log(`findTextInDocument: Text "${searchText}" not found`);
       return null;
     }
 
     const startPos = document.positionAt(index);
     const endPos = document.positionAt(index + searchText.length);
+    console.log(`findTextInDocument: Range found - start: ${startPos.line}:${startPos.character}, end: ${endPos.line}:${endPos.character}`);
 
     return new vscode.Range(startPos, endPos);
   } catch (error) {
@@ -306,56 +303,43 @@ async function extractByRange(
   }
 }
 
-// Smart text-based extraction (single pattern)
-async function _extractByText(
+// Simple selection-based extraction
+async function extractBySelection(
   filePath: string,
-  searchText: string,
+  selection: string,
   extractName: string,
   extractType: "method" | "variable",
 ): Promise<{ success: boolean; message: string }> {
   try {
+    console.log(`extractBySelection called with: filePath=${filePath}, selection="${selection}", extractName="${extractName}", extractType="${extractType}"`);
+    
     const uri = vscode.Uri.file(filePath);
+    console.log(`Opening document: ${uri.toString()}`);
     await vscode.window.showTextDocument(uri);
 
-    // Find the text in the document
-    const range = await findTextInDocument(uri, searchText);
+    // Find the selection text in the document
+    console.log(`Searching for selection text: "${selection}"`);
+    const range = await findTextInDocument(uri, selection);
     if (!range) {
+      console.log(`Selection "${selection}" not found in document`);
       return {
         success: false,
-        message: `Text "${searchText}" not found in file`,
+        message: `Selection "${selection}" not found in file`,
       };
     }
 
-    // For method extraction, try to expand to include full statements/blocks
-    let extractRange = range;
-    if (extractType === "method") {
-      const document = await vscode.workspace.openTextDocument(uri);
-
-      // Expand to include full lines and braces if needed
-      const startLine = range.start.line;
-      const endLine = range.end.line;
-
-      // Look for opening/closing braces to capture complete blocks
-      const _text = document.getText();
-      const _startOffset = document.offsetAt(range.start);
-      const _endOffset = document.offsetAt(range.end);
-
-      // Simple heuristic: extend to line boundaries
-      const _startLineText = document.lineAt(startLine).text;
-      const endLineText = document.lineAt(endLine).text;
-
-      extractRange = new vscode.Range(
-        new vscode.Position(startLine, 0),
-        new vscode.Position(endLine, endLineText.length),
-      );
-    }
+    console.log(`Found selection at range: ${range.start.line}:${range.start.character} to ${range.end.line}:${range.end.character}`);
 
     let success = false;
     if (extractType === "method") {
-      success = await extractMethod(uri, extractRange, extractName);
+      console.log(`Attempting to extract method "${extractName}"`);
+      success = await extractMethod(uri, range, extractName);
     } else if (extractType === "variable") {
-      success = await extractVariable(uri, extractRange, extractName);
+      console.log(`Attempting to extract variable "${extractName}"`);
+      success = await extractVariable(uri, range, extractName);
     }
+
+    console.log(`Extraction result: ${success}`);
 
     // Save after extraction
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -364,11 +348,11 @@ async function _extractByText(
     return {
       success,
       message: success
-        ? `Successfully extracted ${extractType} "${extractName}" from "${searchText}"`
-        : `Failed to extract ${extractType} "${extractName}" from "${searchText}"`,
+        ? `Successfully extracted ${extractType} "${extractName}" from selection "${selection}"`
+        : `Failed to extract ${extractType} "${extractName}" from selection "${selection}"`,
     };
   } catch (error) {
-    console.error("Error in extractByText:", error);
+    console.error("Error in extractBySelection:", error);
     return {
       success: false,
       message: error instanceof Error ? error.message : String(error),
@@ -486,7 +470,6 @@ async function findAndRenameSymbol(
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Cosmic Zebra Refactor extension activated!");
-  const debugVersion = 6;
 
   const disposable = vscode.commands.registerCommand(
     "cosmic-zebra-refactor.quantumSplit",
@@ -552,64 +535,6 @@ export function activate(context: vscode.ExtensionContext) {
     } else if (req.url === "/extract" && req.method === "POST") {
       console.log("HTTP trigger received for extract");
 
-      // HARDCODED TEST: Extract "0" from ultra-simple.js
-      try {
-        const filePath = "/Users/nitsanavni/code/lab/vscode-refactor/ultra-simple.js";
-        const uri = vscode.Uri.file(filePath);
-        
-        // Open the file
-        await vscode.window.showTextDocument(uri);
-        
-        // Find "0" in the text
-        const document = await vscode.workspace.openTextDocument(uri);
-        const text = document.getText();
-        const targetText = "0";
-        const index = text.indexOf(targetText);
-        
-        if (index === -1) {
-          res.writeHead(200);
-          res.end(
-            JSON.stringify({
-              success: false,
-              message: `Text "${targetText}" not found in file`,
-              hardcoded: true
-            }),
-          );
-          return;
-        }
-        
-        const startPos = document.positionAt(index);
-        const endPos = document.positionAt(index + targetText.length);
-        const range = new vscode.Range(startPos, endPos);
-        
-        console.log(`Attempting to extract '${targetText}' from ultra-simple.js`);
-        
-        const success = await extractVariable(uri, range, "zero");
-        
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await vscode.workspace.saveAll(false);
-        
-        res.writeHead(200);
-        res.end(
-          JSON.stringify({
-            success,
-            message: success ? `Successfully extracted '${targetText}' as variable 'zero'` : `Failed to extract '${targetText}'`,
-            hardcoded: true,
-            targetText,
-            range: { start: startPos, end: endPos }
-          }),
-        );
-      } catch (error) {
-        console.error("Hardcoded extract error:", error);
-        res.writeHead(500);
-        res.end(
-          JSON.stringify({
-            error: error instanceof Error ? error.message : String(error),
-            hardcoded: true
-          }),
-        );
-      }
-
       let body = "";
       req.on("data", (chunk) => {
         body += chunk.toString();
@@ -617,25 +542,13 @@ export function activate(context: vscode.ExtensionContext) {
 
       req.on("end", async () => {
         try {
-          const {
-            filePath,
-            extractName,
-            extractType,
-            startsWith,
-            endsWith,
-            // Legacy coordinate-based extraction
-            startLine,
-            startChar,
-            endLine,
-            endChar,
-          } = JSON.parse(body);
+          const { filePath, extractName, extractType, selection } = JSON.parse(body);
 
-          if (!filePath || !extractName || !extractType) {
+          if (!filePath || !extractName || !extractType || !selection) {
             res.writeHead(400);
             res.end(
               JSON.stringify({
-                error:
-                  "Missing required fields: filePath, extractName, extractType",
+                error: "Missing required fields: filePath, extractName, extractType, selection",
               }),
             );
             return;
@@ -651,44 +564,7 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          let result: { success: boolean; message: string };
-
-          // Use range-based extraction if start/end patterns provided
-          if (startsWith && endsWith) {
-            result = await extractByRange(
-              filePath,
-              startsWith,
-              endsWith,
-              extractName,
-              extractType,
-            );
-          }
-          // Fallback to coordinate-based extraction
-          else if (
-            startLine !== undefined &&
-            startChar !== undefined &&
-            endLine !== undefined &&
-            endChar !== undefined
-          ) {
-            result = await performExtraction(
-              filePath,
-              startLine,
-              startChar,
-              endLine,
-              endChar,
-              extractName,
-              extractType,
-            );
-          } else {
-            res.writeHead(400);
-            res.end(
-              JSON.stringify({
-                error:
-                  "Must provide either (startsWith, endsWith) or (startLine, startChar, endLine, endChar)",
-              }),
-            );
-            return;
-          }
+          const result = await extractBySelection(filePath, selection, extractName, extractType);
 
           res.writeHead(200);
           res.end(

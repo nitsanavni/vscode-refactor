@@ -32,6 +32,7 @@
     "check": "bun run format && bun run lint && bun run typecheck",
     "clean": "code --uninstall-extension undefined_publisher.cosmic-zebra-refactor-2025 && rm -f *.vsix && rm -rf dist/*",
     "reinstall": "bun run clean && bun run build && bunx vsce package && code --install-extension *.vsix --force",
+    "restart-ext": "osascript -e 'tell application \"Visual Studio Code\" to activate' -e 'tell application \"System Events\" to keystroke \"p\" using {command down, shift down}' -e 'delay 0.5' -e 'tell application \"System Events\" to keystroke \"restart ext\"' -e 'delay 0.5' -e 'tell application \"System Events\" to key code 36'",
     "trigger": "curl -X POST http://localhost:3141/quantumSplit",
     "cli": "bun run src/cli.ts",
     "cli:help": "bun run src/cli.ts --help"

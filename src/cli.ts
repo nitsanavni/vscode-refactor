@@ -11,24 +11,18 @@ interface ExtractPayload {
   filePath: string;
   extractName: string;
   extractType: "method" | "variable";
-  // Range-based extraction
-  startsWith?: string;
-  endsWith?: string;
-  // Legacy coordinate-based extraction
-  startLine?: number;
-  startChar?: number;
-  endLine?: number;
-  endChar?: number;
+  selection: string;
 }
 
 // Parse command line arguments using minimist
 const args = minimist(Bun.argv.slice(2), {
-  string: ["port", "host", "command", "starts-with", "ends-with"],
+  string: ["port", "host", "command", "selection"],
   boolean: ["help"],
   alias: {
     h: "help",
     p: "port",
     c: "command",
+    s: "selection",
   },
   default: {
     port: "3141",
@@ -57,7 +51,7 @@ Commands:
   health                Check extension health status
   check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
-  extract <file> <name> <type> --starts-with <pattern> --ends-with <pattern>    Extract method or variable
+  extract <file> <name> <type> --selection <text>    Extract method or variable
 
 Examples:
   bun run cli                           # Execute quantumSplit command
@@ -66,8 +60,7 @@ Examples:
   bun run cli -p 3142 quantumSplit      # Use custom port
   bun run cli --command health          # Execute health command
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
-  bun run cli extract test-extract.js calculateSubtotal method --starts-with "let total = 0;" --ends-with "}"
-  bun run cli extract test-extract.js taxAmount variable --starts-with "amount * 0.08" --ends-with "0.08"
+  bun run cli extract ultra-simple.js b variable --selection "0"  # Extract "0" to variable "b"
 `);
 }
 
@@ -136,15 +129,14 @@ async function main() {
     await callExtension(host, port, "rename", payload);
   } else if (cmd === "extract") {
     const [, filePath, extractName, extractType] = positionals;
-    const startsWith = args["starts-with"];
-    const endsWith = args["ends-with"];
+    const selection = args["selection"];
 
     if (!filePath || !extractName || !extractType) {
       console.error(
         "Error: extract command requires <file> <name> <type> arguments",
       );
       console.log(
-        "Usage: bun run cli extract <file> <name> <type> --starts-with <pattern> --ends-with <pattern>",
+        "Usage: bun run cli extract <file> <name> <type> --selection <text>",
       );
       console.log("Type must be 'method' or 'variable'");
       process.exit(1);
@@ -155,12 +147,10 @@ async function main() {
       process.exit(1);
     }
 
-    if (!startsWith || !endsWith) {
-      console.error(
-        "Error: Both --starts-with and --ends-with patterns are required",
-      );
+    if (!selection) {
+      console.error("Error: --selection <text> is required");
       console.log(
-        "Usage: bun run cli extract <file> <name> <type> --starts-with <pattern> --ends-with <pattern>",
+        "Usage: bun run cli extract <file> <name> <type> --selection <text>",
       );
       process.exit(1);
     }
@@ -169,8 +159,7 @@ async function main() {
       filePath,
       extractName,
       extractType: extractType as "method" | "variable",
-      startsWith,
-      endsWith,
+      selection,
     };
 
     await callExtension(host, port, "extract", payload);
