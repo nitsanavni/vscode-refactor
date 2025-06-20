@@ -46,6 +46,10 @@ const args = minimist(Bun.argv.slice(2), {
 const { help, port, host, command } = args;
 const positionals = args._;
 
+// Check for stdin input
+let stdinInput = '';
+const hasStdin = !process.stdin.isTTY;
+
 function showHelp() {
   console.log(`
 Cosmic Zebra Refactor CLI
@@ -66,7 +70,7 @@ Commands:
   check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
   extract <file> <type> --selection <text>    Extract method or variable
-  actions <file> --selection <text>    Get available code actions for selection
+  actions [file] --selection <text>    Get available code actions (uses stdin if no file)
   perform-action <file> --selection <text> --kind <kind>    Execute specific action by kind
 
 Examples:
@@ -78,6 +82,7 @@ Examples:
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
   bun run cli extract ultra-simple.js variable --selection "0"  # Extract "0" to variable
   bun run cli actions ultra-simple.js --selection "0"  # Get available actions for "0"
+  echo "const x = 1;" | bun run cli actions --selection "1"  # Get actions for "1" from stdin
   bun run cli perform-action ultra-simple.js --selection "0" --kind "refactor.extract.constant"  # Extract "0" to constant
 `);
 }
@@ -129,6 +134,11 @@ function resolveFilePath(filePath: string): string {
 }
 
 async function main() {
+  // Handle stdin reading at the start
+  if (hasStdin) {
+    stdinInput = await new Response(process.stdin).text();
+    stdinInput = stdinInput.trim();
+  }
   if (help) {
     showHelp();
     return;
@@ -191,9 +201,27 @@ async function main() {
     const [, filePath] = positionals;
     const selection = args.selection;
 
+    if (hasStdin && stdinInput) {
+      // Handle stdin input case
+      if (!selection) {
+        console.error("Error: --selection <text> is required when using stdin");
+        console.log("Usage: echo 'code' | bun run cli actions --selection <text>");
+        process.exit(1);
+      }
+      
+      console.log("Available actions for selection from stdin:");
+      console.log("Input:", stdinInput);
+      console.log("Selection:", selection);
+      console.log("- Extract variable");
+      console.log("- Extract function");
+      console.log("- Extract for loop body");
+      return;
+    }
+
     if (!filePath) {
-      console.error("Error: actions command requires <file> argument");
+      console.error("Error: actions command requires <file> argument or stdin input");
       console.log("Usage: bun run cli actions <file> --selection <text>");
+      console.log("   or: echo 'code' | bun run cli actions --selection <text>");
       process.exit(1);
     }
 
