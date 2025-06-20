@@ -140,6 +140,8 @@ async function extractVariable(
     );
     codeActions?.forEach((action, i) => {
       console.log(`extractVariable: Action ${i}: ${action.title}`);
+      console.log(`extractVariable: Action ${i} command:`, action.command);
+      console.log(`extractVariable: Action ${i} edit:`, action.edit);
     });
 
     // Find extract action - look for "Extract to constant in enclosing scope"
@@ -154,12 +156,60 @@ async function extractVariable(
       console.log(
         `extractVariable: Found extract action: ${extractAction.title}`,
       );
-      // Execute the extract action
-      await vscode.commands.executeCommand(
-        "vscode.executeCodeAction",
-        extractAction,
-      );
-      return true;
+
+      // If the action has an edit, apply it directly
+      if (extractAction.edit) {
+        console.log(`extractVariable: Applying WorkspaceEdit`);
+        const success = await vscode.workspace.applyEdit(extractAction.edit);
+        console.log(`extractVariable: WorkspaceEdit applied: ${success}`);
+        return success;
+      }
+
+      // If no edit but has command, try to resolve the action first
+      if (extractAction.command) {
+        console.log(`extractVariable: Resolving CodeAction to get edit`);
+
+        // Try to resolve the CodeAction to get the actual edit
+        const resolvedActions = await vscode.commands.executeCommand<
+          vscode.CodeAction[]
+        >(
+          "vscode.executeCodeActionProvider",
+          uri,
+          range,
+          vscode.CodeActionKind.RefactorExtract.value,
+          1, // itemResolveCount - resolve the first action
+        );
+
+        const resolvedAction = resolvedActions?.find(
+          (action) => action.title === extractAction.title,
+        );
+
+        if (resolvedAction?.edit) {
+          console.log(`extractVariable: Found resolved edit, applying`);
+          const success = await vscode.workspace.applyEdit(resolvedAction.edit);
+          console.log(
+            `extractVariable: Resolved WorkspaceEdit applied: ${success}`,
+          );
+          return success;
+        }
+
+        console.log(
+          `extractVariable: No edit found even after resolving, executing command as fallback`,
+        );
+        console.log(
+          `extractVariable: Executing command: ${extractAction.command.command}`,
+        );
+        await vscode.commands.executeCommand(
+          extractAction.command.command,
+          ...(extractAction.command.arguments || []),
+        );
+        return true;
+      } else {
+        console.log(
+          `extractVariable: Action has no command or edit to execute`,
+        );
+        return false;
+      }
     }
 
     console.log(`extractVariable: No extract variable/constant action found`);

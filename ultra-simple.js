@@ -1,1 +1,2 @@
-a = 0;
+const newLocal = 0;
+const _a = newLocal;
