@@ -1,3 +1,4 @@
+# Usage: sg scan --rule for-body-with-braces.yml --json gilded_rose.js | jq -r '.[].text'
 id: for-body-with-braces
 language: javascript
 rule:

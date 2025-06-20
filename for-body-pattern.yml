@@ -1,3 +1,4 @@
+# Usage: sg scan --rule for-body-pattern.yml --json gilded_rose.js | jq '.[] | select(.range.start.line == 13) | .metaVariables.multi.FORBODY[] | .text'
 id: for-body-pattern
 language: javascript
 rule:

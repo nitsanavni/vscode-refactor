@@ -1,3 +1,4 @@
+# Usage: sg scan --rule extract-for-body.yml --json gilded_rose.js | jq -r '.[].text'
 id: gilded-rose-for-body
 language: javascript
 rule:
