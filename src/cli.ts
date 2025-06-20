@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import minimist from "minimist";
+import { resolve } from "node:path";
 
 interface RenamePayload {
   filePath: string;
@@ -107,6 +108,11 @@ async function callExtension(
   }
 }
 
+// Helper function to resolve file path to absolute path
+function resolveFilePath(filePath: string): string {
+  return resolve(process.cwd(), filePath);
+}
+
 async function main() {
   if (help) {
     showHelp();
@@ -127,7 +133,7 @@ async function main() {
     }
 
     const payload: RenamePayload = {
-      filePath,
+      filePath: resolveFilePath(filePath),
       oldName,
       newName,
     };
@@ -160,7 +166,7 @@ async function main() {
     }
 
     const payload: ExtractPayload = {
-      filePath,
+      filePath: resolveFilePath(filePath),
       extractType: extractType as "method" | "variable",
       selection,
     };
@@ -183,7 +189,7 @@ async function main() {
     }
 
     const payload: ActionsPayload = {
-      filePath,
+      filePath: resolveFilePath(filePath),
       selection,
     };
 
