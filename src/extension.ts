@@ -486,6 +486,7 @@ async function findAndRenameSymbol(
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Cosmic Zebra Refactor extension activated!");
+  const debugVersion = 5;
 
   const disposable = vscode.commands.registerCommand(
     "cosmic-zebra-refactor.quantumSplit",
@@ -550,6 +551,46 @@ export function activate(context: vscode.ExtensionContext) {
       });
     } else if (req.url === "/extract" && req.method === "POST") {
       console.log("HTTP trigger received for extract");
+
+      // HARDCODED TEST: Extract "5 + 3" from simple-test.js
+      try {
+        const filePath = "/Users/nitsanavni/code/lab/vscode-refactor/simple-test.js";
+        const uri = vscode.Uri.file(filePath);
+        
+        // Open the file
+        await vscode.window.showTextDocument(uri);
+        
+        // Hardcode the range for "5 + 3" - line 0, chars 10-15
+        const range = new vscode.Range(
+          new vscode.Position(0, 10), // start of "5 + 3"
+          new vscode.Position(0, 15)  // end of "5 + 3"
+        );
+        
+        console.log("Attempting to extract '5 + 3' from simple-test.js");
+        
+        const success = await extractVariable(uri, range, "sum");
+        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await vscode.workspace.saveAll(false);
+        
+        res.writeHead(200);
+        res.end(
+          JSON.stringify({
+            success,
+            message: success ? "Successfully extracted hardcoded range" : "Failed to extract hardcoded range",
+            hardcoded: true
+          }),
+        );
+      } catch (error) {
+        console.error("Hardcoded extract error:", error);
+        res.writeHead(500);
+        res.end(
+          JSON.stringify({
+            error: error instanceof Error ? error.message : String(error),
+            hardcoded: true
+          }),
+        );
+      }
 
       let body = "";
       req.on("data", (chunk) => {
@@ -651,7 +692,11 @@ export function activate(context: vscode.ExtensionContext) {
     } else if (req.url === "/health" && req.method === "GET") {
       res.writeHead(200);
       res.end(
-        JSON.stringify({ status: "ok", extension: "cosmic-zebra-refactor" }),
+        JSON.stringify({ 
+          status: "ok", 
+          extension: "cosmic-zebra-refactor",
+          debugVersion
+        }),
       );
     } else {
       res.writeHead(404);
@@ -661,9 +706,9 @@ export function activate(context: vscode.ExtensionContext) {
 
   const port = 3141;
   server.listen(port, "localhost", () => {
-    console.log(`Cosmic Zebra Refactor HTTP server listening on port ${port}`);
+    console.log(`Cosmic Zebra Refactor HTTP server listening on port ${port} (debug v${debugVersion})`);
     vscode.window.showInformationMessage(
-      `Extension HTTP server started on port ${port}`,
+      `Extension HTTP server started on port ${port} (debug v${debugVersion})`,
     );
   });
 

@@ -22,15 +22,16 @@
     ]
   },
   "scripts": {
-    "build": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --sourcemap=linked",
-    "build:watch": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --sourcemap=linked --watch",
-    "package": "bun build src/extension.ts --outfile=dist/extension.js --target=node --format=cjs --external=vscode --minify --production",
+    "build": "bun build src/extension.ts --outdir=dist --target=node --format=cjs --external=vscode --sourcemap=linked",
+    "build:watch": "bun build src/extension.ts --outdir=dist --target=node --format=cjs --external=vscode --sourcemap=linked --watch",
+    "package": "bun build src/extension.ts --outdir=dist --target=node --format=cjs --external=vscode --minify --production",
     "lint": "biome check . --write --unsafe",
     "format": "biome format . --write",
     "typecheck": "tsgo --noEmit",
     "test": "bun test",
     "check": "bun run format && bun run lint && bun run typecheck",
-    "reinstall": "bun run build && bunx vsce package && code --install-extension *.vsix --force",
+    "clean": "code --uninstall-extension undefined_publisher.cosmic-zebra-refactor-2025 && rm -f *.vsix && rm -rf dist/*",
+    "reinstall": "bun run clean && bun run build && bunx vsce package && code --install-extension *.vsix --force",
     "trigger": "curl -X POST http://localhost:3141/quantumSplit",
     "cli": "bun run src/cli.ts",
     "cli:help": "bun run src/cli.ts --help"
