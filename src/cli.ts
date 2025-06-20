@@ -70,7 +70,7 @@ Commands:
   check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
   extract <file> <type> --selection <text>    Extract method or variable
-  actions [file] --selection <text>    Get available code actions (uses stdin if no file)
+  actions [file] [--selection <text>]  Get available code actions (uses stdin as selection if no file)
   perform-action <file> --selection <text> --kind <kind>    Execute specific action by kind
 
 Examples:
@@ -82,7 +82,7 @@ Examples:
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
   bun run cli extract ultra-simple.js variable --selection "0"  # Extract "0" to variable
   bun run cli actions ultra-simple.js --selection "0"  # Get available actions for "0"
-  echo "const x = 1;" | bun run cli actions --selection "1"  # Get actions for "1" from stdin
+  echo "const x = 1;" | bun run cli actions ultra-simple.js  # Use piped text as selection
   bun run cli perform-action ultra-simple.js --selection "0" --kind "refactor.extract.constant"  # Extract "0" to constant
 `);
 }
@@ -199,29 +199,22 @@ async function main() {
     await callExtension(host, port, "extract", payload);
   } else if (cmd === "actions") {
     const [, filePath] = positionals;
-    const selection = args.selection;
+    let selection = args.selection;
 
     if (hasStdin && stdinInput) {
-      // Handle stdin input case
-      if (!selection) {
-        console.error("Error: --selection <text> is required when using stdin");
-        console.log("Usage: echo 'code' | bun run cli actions --selection <text>");
+      // Handle stdin input case - the piped text IS the selection
+      if (!filePath) {
+        console.error("Error: file argument required when using stdin as selection");
+        console.log("Usage: echo 'selection' | bun run cli actions <file>");
         process.exit(1);
       }
-      
-      console.log("Available actions for selection from stdin:");
-      console.log("Input:", stdinInput);
-      console.log("Selection:", selection);
-      console.log("- Extract variable");
-      console.log("- Extract function");
-      console.log("- Extract for loop body");
-      return;
+      selection = stdinInput;
     }
 
     if (!filePath) {
       console.error("Error: actions command requires <file> argument or stdin input");
       console.log("Usage: bun run cli actions <file> --selection <text>");
-      console.log("   or: echo 'code' | bun run cli actions --selection <text>");
+      console.log("   or: echo 'selection' | bun run cli actions");
       process.exit(1);
     }
 
