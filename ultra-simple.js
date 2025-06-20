@@ -1,3 +1,5 @@
-const newLocal = 0;
+const newLocal = newFunction();
 const _a = newLocal;
-cre;
+function newFunction() {
+  return 0;
+}

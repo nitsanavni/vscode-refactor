@@ -253,6 +253,110 @@ async function findTextInDocument(
   }
 }
 
+// Get available code actions for a text selection
+async function getAvailableActions(
+  filePath: string,
+  selection: string,
+): Promise<{
+  success: boolean;
+  actions: Array<{
+    index: number;
+    title: string;
+    kind: string;
+    isPreferred: boolean;
+    hasEdit: boolean;
+    hasCommand: boolean;
+    command: string | null;
+  }>;
+  message: string;
+}> {
+  try {
+    console.log(
+      `getAvailableActions called with: filePath=${filePath}, selection="${selection}"`,
+    );
+
+    const uri = vscode.Uri.file(filePath);
+    console.log(`Opening document: ${uri.toString()}`);
+    await vscode.window.showTextDocument(uri);
+
+    // Find the selection text in the document
+    console.log(`Searching for selection text: "${selection}"`);
+    const range = await findTextInDocument(uri, selection);
+    if (!range) {
+      console.log(`Selection "${selection}" not found in document`);
+      return {
+        success: false,
+        actions: [],
+        message: `Selection "${selection}" not found in file`,
+      };
+    }
+
+    console.log(
+      `Found selection at range: ${range.start.line}:${range.start.character} to ${range.end.line}:${range.end.character}`,
+    );
+
+    // Get all available code actions for the range
+    console.log(`Getting all code actions for range`);
+    const allCodeActions = await vscode.commands.executeCommand<
+      vscode.CodeAction[]
+    >("vscode.executeCodeActionProvider", uri, range);
+
+    console.log(`Found ${allCodeActions?.length || 0} total code actions`);
+
+    // Also get refactor-specific actions
+    const refactorActions = await vscode.commands.executeCommand<
+      vscode.CodeAction[]
+    >(
+      "vscode.executeCodeActionProvider",
+      uri,
+      range,
+      vscode.CodeActionKind.Refactor.value,
+    );
+
+    console.log(`Found ${refactorActions?.length || 0} refactor actions`);
+
+    // Combine and deduplicate actions
+    const combinedActions = [...(allCodeActions || [])];
+    if (refactorActions) {
+      for (const refactorAction of refactorActions) {
+        if (
+          !combinedActions.some(
+            (action) => action.title === refactorAction.title,
+          )
+        ) {
+          combinedActions.push(refactorAction);
+        }
+      }
+    }
+
+    // Format actions for display
+    const formattedActions = combinedActions.map((action, index) => ({
+      index,
+      title: action.title,
+      kind: action.kind?.value || "unknown",
+      isPreferred: action.isPreferred || false,
+      hasEdit: !!action.edit,
+      hasCommand: !!action.command,
+      command: action.command?.command || null,
+    }));
+
+    console.log(`Returning ${formattedActions.length} formatted actions`);
+
+    return {
+      success: true,
+      actions: formattedActions,
+      message: `Found ${formattedActions.length} available actions for selection "${selection}"`,
+    };
+  } catch (error) {
+    console.error("Error in getAvailableActions:", error);
+    return {
+      success: false,
+      actions: [],
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 // Simple selection-based extraction
 async function extractBySelection(
   filePath: string,
@@ -484,6 +588,48 @@ export function activate(context: vscode.ExtensionContext) {
           );
         } catch (error) {
           console.error("Extract error:", error);
+          res.writeHead(500);
+          res.end(
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          );
+        }
+      });
+    } else if (req.url === "/actions" && req.method === "POST") {
+      console.log("HTTP trigger received for actions");
+
+      let body = "";
+      req.on("data", (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on("end", async () => {
+        try {
+          const { filePath, selection } = JSON.parse(body);
+
+          if (!filePath || !selection) {
+            res.writeHead(400);
+            res.end(
+              JSON.stringify({
+                error: "Missing required fields: filePath, selection",
+              }),
+            );
+            return;
+          }
+
+          const result = await getAvailableActions(filePath, selection);
+
+          res.writeHead(200);
+          res.end(
+            JSON.stringify({
+              success: result.success,
+              message: result.message,
+              actions: result.actions,
+            }),
+          );
+        } catch (error) {
+          console.error("Actions error:", error);
           res.writeHead(500);
           res.end(
             JSON.stringify({

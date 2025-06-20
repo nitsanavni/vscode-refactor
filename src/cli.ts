@@ -13,6 +13,11 @@ interface ExtractPayload {
   selection: string;
 }
 
+interface ActionsPayload {
+  filePath: string;
+  selection: string;
+}
+
 // Parse command line arguments using minimist
 const args = minimist(Bun.argv.slice(2), {
   string: ["port", "host", "command", "selection"],
@@ -51,6 +56,7 @@ Commands:
   check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
   extract <file> <type> --selection <text>    Extract method or variable
+  actions <file> --selection <text>    Get available code actions for selection
 
 Examples:
   bun run cli                           # Execute quantumSplit command
@@ -60,6 +66,7 @@ Examples:
   bun run cli --command health          # Execute health command
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
   bun run cli extract ultra-simple.js variable --selection "0"  # Extract "0" to variable
+  bun run cli actions ultra-simple.js --selection "0"  # Get available actions for "0"
 `);
 }
 
@@ -67,7 +74,7 @@ async function callExtension(
   host: string,
   port: string,
   command: string,
-  payload?: RenamePayload | ExtractPayload,
+  payload?: RenamePayload | ExtractPayload | ActionsPayload,
 ) {
   const url = `http://${host}:${port}/${command}`;
   const method = command === "health" ? "GET" : "POST";
@@ -159,9 +166,33 @@ async function main() {
     };
 
     await callExtension(host, port, "extract", payload);
+  } else if (cmd === "actions") {
+    const [, filePath] = positionals;
+    const selection = args.selection;
+
+    if (!filePath) {
+      console.error("Error: actions command requires <file> argument");
+      console.log("Usage: bun run cli actions <file> --selection <text>");
+      process.exit(1);
+    }
+
+    if (!selection) {
+      console.error("Error: --selection <text> is required");
+      console.log("Usage: bun run cli actions <file> --selection <text>");
+      process.exit(1);
+    }
+
+    const payload: ActionsPayload = {
+      filePath,
+      selection,
+    };
+
+    await callExtension(host, port, "actions", payload);
   } else if (cmd === "check-version") {
     const expectedVersion = positionals[1] ? parseInt(positionals[1]) : 6;
-    const result = await callExtension(host, port, "health");
+    const result = (await callExtension(host, port, "health")) as {
+      debugVersion: number;
+    };
     console.log(`Extension version: ${result.debugVersion}`);
     console.log(`Expected version: ${expectedVersion}`);
     console.log(
