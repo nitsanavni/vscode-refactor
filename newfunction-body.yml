@@ -1,5 +1,5 @@
-# Match the body of newFunction specifically
-id: newfunction-body
+# Match the body of updateItemQuality specifically
+id: updateitemquality-body
 language: javascript
 rule:
   all:
@@ -8,4 +8,4 @@ rule:
         kind: function_declaration
         has:
           kind: identifier
-          regex: "newFunction"
+          regex: "updateItemQuality"

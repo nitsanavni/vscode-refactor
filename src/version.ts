@@ -1,1 +1,1 @@
-export const debugVersion = 23;
+export const debugVersion = 24;
