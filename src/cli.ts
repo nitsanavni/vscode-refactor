@@ -49,7 +49,7 @@ const { help, port, host, command } = args;
 const positionals = args._;
 
 // Check for stdin input
-let stdinInput = '';
+let stdinInput = "";
 const hasStdin = !process.stdin.isTTY;
 
 function showHelp() {
@@ -207,7 +207,9 @@ async function main() {
     if (hasStdin && stdinInput) {
       // Handle stdin input case - the piped text IS the selection
       if (!filePath) {
-        console.error("Error: file argument required when using stdin as selection");
+        console.error(
+          "Error: file argument required when using stdin as selection",
+        );
         console.log("Usage: echo 'selection' | bun run cli actions <file>");
         process.exit(1);
       }
@@ -215,7 +217,9 @@ async function main() {
     }
 
     if (!filePath) {
-      console.error("Error: actions command requires <file> argument or stdin input");
+      console.error(
+        "Error: actions command requires <file> argument or stdin input",
+      );
       console.log("Usage: bun run cli actions <file> --selection <text>");
       console.log("   or: echo 'selection' | bun run cli actions");
       process.exit(1);
@@ -242,8 +246,12 @@ async function main() {
     if (hasStdin && stdinInput) {
       // Handle stdin input case - the piped text IS the selection
       if (!filePath) {
-        console.error("Error: file argument required when using stdin as selection");
-        console.log("Usage: echo 'selection' | bun run cli perform-action <file> --kind <kind>");
+        console.error(
+          "Error: file argument required when using stdin as selection",
+        );
+        console.log(
+          "Usage: echo 'selection' | bun run cli perform-action <file> --kind <kind>",
+        );
         process.exit(1);
       }
       selection = stdinInput;
