@@ -362,10 +362,11 @@ async function performAction(
   filePath: string,
   selection: string,
   actionKind: string,
+  actionTitle?: string,
 ): Promise<{ success: boolean; message: string; actionFound: boolean }> {
   try {
     console.log(
-      `performAction called with: filePath=${filePath}, selection="${selection}", actionKind="${actionKind}"`,
+      `performAction called with: filePath=${filePath}, selection="${selection}", actionKind="${actionKind}", actionTitle="${actionTitle || 'none'}"`,
     );
 
     const uri = vscode.Uri.file(filePath);
@@ -396,19 +397,29 @@ async function performAction(
 
     console.log(`Found ${allCodeActions?.length || 0} total code actions`);
 
-    // Find the action with matching kind
-    const targetAction = allCodeActions?.find(
-      (action) => action.kind?.value === actionKind,
-    );
+    // Find the action with matching kind and optionally title
+    const targetAction = allCodeActions?.find((action) => {
+      const kindMatches = action.kind?.value === actionKind;
+      if (!actionTitle) {
+        return kindMatches;
+      }
+      return kindMatches && action.title === actionTitle;
+    });
 
     if (!targetAction) {
-      console.log(`Action with kind "${actionKind}" not found`);
-      const availableKinds =
-        allCodeActions?.map((action) => action.kind?.value).filter(Boolean) ||
-        [];
+      const searchCriteria = actionTitle 
+        ? `kind "${actionKind}" and title "${actionTitle}"`
+        : `kind "${actionKind}"`;
+      console.log(`Action with ${searchCriteria} not found`);
+      
+      const availableActions = allCodeActions?.map((action) => ({
+        kind: action.kind?.value,
+        title: action.title,
+      })).filter((action) => action.kind) || [];
+      
       return {
         success: false,
-        message: `Action with kind "${actionKind}" not found. Available kinds: ${availableKinds.join(", ")}`,
+        message: `Action with ${searchCriteria} not found. Available actions: ${availableActions.map(a => `${a.kind} ("${a.title}")`).join(", ")}`,
         actionFound: false,
       };
     }
@@ -787,7 +798,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       req.on("end", async () => {
         try {
-          const { filePath, selection, actionKind } = JSON.parse(body);
+          const { filePath, selection, actionKind, actionTitle } = JSON.parse(body);
 
           if (!filePath || !selection || !actionKind) {
             res.writeHead(400);
@@ -800,7 +811,7 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          const result = await performAction(filePath, selection, actionKind);
+          const result = await performAction(filePath, selection, actionKind, actionTitle);
 
           res.writeHead(200);
           res.end(

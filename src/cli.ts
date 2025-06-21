@@ -23,11 +23,12 @@ interface PerformActionPayload {
   filePath: string;
   selection: string;
   actionKind: string;
+  actionTitle?: string;
 }
 
 // Parse command line arguments using minimist
 const args = minimist(Bun.argv.slice(2), {
-  string: ["port", "host", "command", "selection", "kind"],
+  string: ["port", "host", "command", "selection", "kind", "title"],
   boolean: ["help"],
   alias: {
     h: "help",
@@ -35,6 +36,7 @@ const args = minimist(Bun.argv.slice(2), {
     c: "command",
     s: "selection",
     k: "kind",
+    t: "title",
   },
   default: {
     port: "3141",
@@ -63,6 +65,7 @@ Options:
   -c, --command <cmd>     Command to execute (default: quantumSplit)
   -s, --selection <text>  Text selection for refactoring commands
   -k, --kind <kind>       Action kind for perform-action command
+  -t, --title <title>     Action title for perform-action command (optional)
 
 Commands:
   health                Check extension health status
@@ -70,7 +73,7 @@ Commands:
   rename <file> <old> <new>    Rename symbol in file
   extract <file> <type> --selection <text>    Extract method or variable
   actions [file] [--selection <text>]  Get available code actions (uses stdin as selection if no file)
-  perform-action <file> --selection <text> --kind <kind>    Execute specific action by kind
+  perform-action <file> --selection <text> --kind <kind> [--title <title>]    Execute specific action by kind and optionally title
 
 Examples:
   bun run cli                           # Execute health command (default)
@@ -234,6 +237,7 @@ async function main() {
     const [, filePath] = positionals;
     let selection = args.selection;
     const actionKind = args.kind;
+    const actionTitle = args.title;
 
     if (hasStdin && stdinInput) {
       // Handle stdin input case - the piped text IS the selection
@@ -276,6 +280,7 @@ async function main() {
       filePath: resolveFilePath(filePath),
       selection,
       actionKind,
+      ...(actionTitle && { actionTitle }),
     };
 
     await callExtension(host, port, "perform-action", payload);
