@@ -580,7 +580,7 @@ async function findAndRenameSymbol(
     const uri = vscode.Uri.file(filePath);
 
     // Open the file to ensure it's loaded and analyzed by language server
-    const _document = await vscode.window.showTextDocument(uri);
+    await vscode.window.showTextDocument(uri);
 
     // Get all symbols in document
     const symbols = await vscode.commands.executeCommand<
@@ -631,27 +631,14 @@ async function findAndRenameSymbol(
 export function activate(context: vscode.ExtensionContext) {
   console.log("Cosmic Zebra Refactor extension activated!");
 
-  const disposable = vscode.commands.registerCommand(
-    "cosmic-zebra-refactor.quantumSplit",
-    () => {
-      console.log("quantumSplit command executed!");
-      vscode.window.showInformationMessage(
-        "Quantum Split Analysis activated! 🦓⚡",
-      );
-    },
-  );
+
 
   // HTTP server for CLI triggers
   const server = http.createServer(async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Content-Type", "application/json");
 
-    if (req.url === "/quantumSplit" && req.method === "POST") {
-      console.log("HTTP trigger received for quantumSplit");
-      vscode.commands.executeCommand("cosmic-zebra-refactor.quantumSplit");
-      res.writeHead(200);
-      res.end(JSON.stringify({ success: true, message: "Command executed" }));
-    } else if (req.url === "/rename" && req.method === "POST") {
+    if (req.url === "/rename" && req.method === "POST") {
       console.log("HTTP trigger received for rename");
 
       let body = "";
@@ -858,7 +845,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
   });
 
-  context.subscriptions.push(disposable, { dispose: () => server.close() });
+  context.subscriptions.push({ dispose: () => server.close() });
 }
 
 export function deactivate() {}

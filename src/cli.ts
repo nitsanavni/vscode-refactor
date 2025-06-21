@@ -39,7 +39,7 @@ const args = minimist(Bun.argv.slice(2), {
   default: {
     port: "3141",
     host: "localhost",
-    command: "quantumSplit",
+    command: "health",
   },
 });
 
@@ -65,7 +65,6 @@ Options:
   -k, --kind <kind>       Action kind for perform-action command
 
 Commands:
-  quantumSplit           Trigger quantum split analysis
   health                Check extension health status
   check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
@@ -74,10 +73,10 @@ Commands:
   perform-action <file> --selection <text> --kind <kind>    Execute specific action by kind
 
 Examples:
-  bun run cli                           # Execute quantumSplit command
+  bun run cli                           # Execute health command (default)
   bun run cli health                    # Check health status
   bun run cli check-version             # Check extension version
-  bun run cli -p 3142 quantumSplit      # Use custom port
+  bun run cli -p 3142 health            # Use custom port
   bun run cli --command health          # Execute health command
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
   bun run cli extract ultra-simple.js variable --selection "0"  # Extract "0" to variable
