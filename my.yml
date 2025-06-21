@@ -1,0 +1,4 @@
+id: function body
+language: JavaScript
+rule:
+  pattern: class Shop { $$$BODY }

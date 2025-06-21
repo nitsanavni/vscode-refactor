@@ -1,0 +1,17 @@
+# Match function body contents without surrounding braces
+id: function-body-no-braces
+language: javascript
+rule:
+  all:
+    - any:
+        - kind: if_statement
+        - kind: expression_statement
+        - kind: return_statement
+        - kind: variable_declaration
+    - inside:
+        kind: statement_block
+        inside:
+          kind: function_declaration
+          has:
+            kind: identifier
+            regex: "updateItemQuality"
