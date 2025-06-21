@@ -366,7 +366,7 @@ async function performAction(
 ): Promise<{ success: boolean; message: string; actionFound: boolean }> {
   try {
     console.log(
-      `performAction called with: filePath=${filePath}, selection="${selection}", actionKind="${actionKind}", actionTitle="${actionTitle || 'none'}"`,
+      `performAction called with: filePath=${filePath}, selection="${selection}", actionKind="${actionKind}", actionTitle="${actionTitle || "none"}"`,
     );
 
     const uri = vscode.Uri.file(filePath);
@@ -407,19 +407,22 @@ async function performAction(
     });
 
     if (!targetAction) {
-      const searchCriteria = actionTitle 
+      const searchCriteria = actionTitle
         ? `kind "${actionKind}" and title "${actionTitle}"`
         : `kind "${actionKind}"`;
       console.log(`Action with ${searchCriteria} not found`);
-      
-      const availableActions = allCodeActions?.map((action) => ({
-        kind: action.kind?.value,
-        title: action.title,
-      })).filter((action) => action.kind) || [];
-      
+
+      const availableActions =
+        allCodeActions
+          ?.map((action) => ({
+            kind: action.kind?.value,
+            title: action.title,
+          }))
+          .filter((action) => action.kind) || [];
+
       return {
         success: false,
-        message: `Action with ${searchCriteria} not found. Available actions: ${availableActions.map(a => `${a.kind} ("${a.title}")`).join(", ")}`,
+        message: `Action with ${searchCriteria} not found. Available actions: ${availableActions.map((a) => `${a.kind} ("${a.title}")`).join(", ")}`,
         actionFound: false,
       };
     }
@@ -457,13 +460,21 @@ async function performAction(
         "vscode.executeCodeActionProvider",
         uri,
         range,
-        vscode.CodeActionKind.RefactorExtract.value,
-        1, // itemResolveCount - resolve the first action
+        vscode.CodeActionKind.Refactor.value,
+        10, // itemResolveCount - resolve more actions to find the right one
       );
 
-      const resolvedAction = resolvedActions?.find(
-        (action) => action.kind?.value === actionKind,
-      );
+      console.log(`Found ${resolvedActions?.length || 0} resolved actions`);
+
+      const resolvedAction = resolvedActions?.find((action) => {
+        const kindMatches = action.kind?.value === actionKind;
+        if (!actionTitle) {
+          return kindMatches;
+        }
+        return kindMatches && action.title === actionTitle;
+      });
+
+      console.log(`resolved action ${resolvedAction?.title}`);
 
       if (resolvedAction?.edit) {
         console.log(`Found resolved edit, applying WorkspaceEdit`);
@@ -642,8 +653,6 @@ async function findAndRenameSymbol(
 export function activate(context: vscode.ExtensionContext) {
   console.log("Cosmic Zebra Refactor extension activated!");
 
-
-
   // HTTP server for CLI triggers
   const server = http.createServer(async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -798,7 +807,8 @@ export function activate(context: vscode.ExtensionContext) {
 
       req.on("end", async () => {
         try {
-          const { filePath, selection, actionKind, actionTitle } = JSON.parse(body);
+          const { filePath, selection, actionKind, actionTitle } =
+            JSON.parse(body);
 
           if (!filePath || !selection || !actionKind) {
             res.writeHead(400);
@@ -811,7 +821,12 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          const result = await performAction(filePath, selection, actionKind, actionTitle);
+          const result = await performAction(
+            filePath,
+            selection,
+            actionKind,
+            actionTitle,
+          );
 
           res.writeHead(200);
           res.end(
