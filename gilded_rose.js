@@ -16,7 +16,7 @@ class Shop {
     return this.items;
 
     function updateItemQuality(item) {
-      newFunction(item);
+      foo(item);
     }
   }
 }
@@ -25,7 +25,7 @@ module.exports = {
   Item,
   Shop,
 };
-function newFunction(item) {
+function foo(item) {
     if (item.name !== "Aged Brie" &&
         item.name !== "Backstage passes to a TAFKAL80ETC concert") {
         if (item.quality > 0) {
