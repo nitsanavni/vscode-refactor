@@ -54,6 +54,12 @@ bun run cli health
 - `bun run check` - Run format + lint + typecheck
 - `bun run reinstall && bun run restart-ext` - Full reinstall and restart for version updates
 
+### Bun Test Output
+- `bun test` writes test results to stderr, not stdout
+- To see test output: `bun test 2>&1` (redirects stderr to stdout)
+- For coverage: `bun test --coverage 2>&1`
+- This is intentional behavior to separate test results from program output
+
 ## Code Style
 - **Formatting**: 2-space indentation, biome formatter
 - **Types**: Strict TypeScript, explicit types for function parameters/returns
