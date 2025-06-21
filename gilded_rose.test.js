@@ -53,6 +53,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(4);
       expect(items[0].quality).toBe(0);
     });
 
@@ -62,6 +63,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(-1);
       expect(items[0].quality).toBe(0);
     });
 
@@ -71,6 +73,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(-1);
       expect(items[0].quality).toBe(0);
     });
   });
@@ -102,6 +105,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(1);
       expect(items[0].quality).toBe(50);
     });
 
@@ -111,6 +115,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(-1);
       expect(items[0].quality).toBe(50);
     });
 
@@ -120,6 +125,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(-1);
       expect(items[0].quality).toBe(50);
     });
   });
@@ -223,6 +229,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(14);
       expect(items[0].quality).toBe(50);
     });
 
@@ -232,6 +239,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(9);
       expect(items[0].quality).toBe(50);
     });
 
@@ -241,6 +249,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(4);
       expect(items[0].quality).toBe(50);
     });
 
@@ -250,6 +259,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(9);
       expect(items[0].quality).toBe(50);
     });
 
@@ -259,6 +269,7 @@ describe("Gilded Rose", () => {
       
       shop.updateQuality();
       
+      expect(items[0].sellIn).toBe(4);
       expect(items[0].quality).toBe(50);
     });
   });
