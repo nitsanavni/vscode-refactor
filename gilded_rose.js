@@ -16,7 +16,15 @@ class Shop {
     return this.items;
 
     function updateItemQuality(item) {
-      foo(item);
+      if (item.name === "Sulfuras, Hand of Ragnaros") {
+        foo(item);
+      } else if (item.name === "Aged Brie") {
+        foo(item);
+      } else if (item.name === "Backstage passes to a TAFKAL80ETC concert") {
+        foo(item);
+      } else {
+        foo(item);
+      }
     }
   }
 }
