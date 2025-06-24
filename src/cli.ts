@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { resolve } from "node:path";
 import minimist from "minimist";
+import { debugVersion } from "./version.js";
 
 interface RenamePayload {
   filePath: string;
@@ -293,7 +294,7 @@ async function main() {
 
     await callExtension(host, port, "perform-action", payload);
   } else if (cmd === "check-version") {
-    const expectedVersion = positionals[1] ? parseInt(positionals[1]) : 6;
+    const expectedVersion = positionals[1] ? parseInt(positionals[1]) : debugVersion;
     const result = (await callExtension(host, port, "health")) as {
       debugVersion: number;
     };
