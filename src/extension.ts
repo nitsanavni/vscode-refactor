@@ -224,16 +224,27 @@ async function extractVariable(
 async function findTextInDocument(
   uri: vscode.Uri,
   searchText: string,
+  startLine?: number,
 ): Promise<vscode.Range | null> {
   try {
     console.log(
-      `findTextInDocument: Searching for "${searchText}" in ${uri.toString()}`,
+      `findTextInDocument: Searching for "${searchText}" in ${uri.toString()}${startLine !== undefined ? ` from line ${startLine}` : ""}`,
     );
     const document = await vscode.workspace.openTextDocument(uri);
     const text = document.getText();
     console.log(`findTextInDocument: Document content: "${text}"`);
 
-    const index = text.indexOf(searchText);
+    let searchStartOffset = 0;
+    if (startLine !== undefined && startLine > 0) {
+      // Convert 1-based line number to 0-based position
+      const linePos = new vscode.Position(startLine - 1, 0);
+      searchStartOffset = document.offsetAt(linePos);
+      console.log(
+        `findTextInDocument: Starting search from line ${startLine} (offset ${searchStartOffset})`,
+      );
+    }
+
+    const index = text.indexOf(searchText, searchStartOffset);
     console.log(`findTextInDocument: Index of "${searchText}": ${index}`);
     if (index === -1) {
       console.log(`findTextInDocument: Text "${searchText}" not found`);
@@ -257,6 +268,7 @@ async function findTextInDocument(
 async function getAvailableActions(
   filePath: string,
   selection: string,
+  startLine?: number,
 ): Promise<{
   success: boolean;
   actions: Array<{
@@ -272,7 +284,7 @@ async function getAvailableActions(
 }> {
   try {
     console.log(
-      `getAvailableActions called with: filePath=${filePath}, selection="${selection}"`,
+      `getAvailableActions called with: filePath=${filePath}, selection="${selection}"${startLine !== undefined ? `, startLine=${startLine}` : ""}`,
     );
 
     const uri = vscode.Uri.file(filePath);
@@ -281,7 +293,7 @@ async function getAvailableActions(
 
     // Find the selection text in the document
     console.log(`Searching for selection text: "${selection}"`);
-    const range = await findTextInDocument(uri, selection);
+    const range = await findTextInDocument(uri, selection, startLine);
     if (!range) {
       console.log(`Selection "${selection}" not found in document`);
       return {
@@ -363,10 +375,11 @@ async function performAction(
   selection: string,
   actionKind: string,
   actionTitle?: string,
+  startLine?: number,
 ): Promise<{ success: boolean; message: string; actionFound: boolean }> {
   try {
     console.log(
-      `performAction called with: filePath=${filePath}, selection="${selection}", actionKind="${actionKind}", actionTitle="${actionTitle || "none"}"`,
+      `performAction called with: filePath=${filePath}, selection="${selection}", actionKind="${actionKind}", actionTitle="${actionTitle || "none"}"${startLine !== undefined ? `, startLine=${startLine}` : ""}`,
     );
 
     const uri = vscode.Uri.file(filePath);
@@ -375,7 +388,7 @@ async function performAction(
 
     // Find the selection text in the document
     console.log(`Searching for selection text: "${selection}"`);
-    const range = await findTextInDocument(uri, selection);
+    const range = await findTextInDocument(uri, selection, startLine);
     if (!range) {
       console.log(`Selection "${selection}" not found in document`);
       return {
@@ -765,7 +778,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       req.on("end", async () => {
         try {
-          const { filePath, selection } = JSON.parse(body);
+          const { filePath, selection, startLine } = JSON.parse(body);
 
           if (!filePath || !selection) {
             res.writeHead(400);
@@ -777,7 +790,7 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          const result = await getAvailableActions(filePath, selection);
+          const result = await getAvailableActions(filePath, selection, startLine);
 
           res.writeHead(200);
           res.end(
@@ -807,7 +820,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       req.on("end", async () => {
         try {
-          const { filePath, selection, actionKind, actionTitle } =
+          const { filePath, selection, actionKind, actionTitle, startLine } =
             JSON.parse(body);
 
           if (!filePath || !selection || !actionKind) {
@@ -826,6 +839,7 @@ export function activate(context: vscode.ExtensionContext) {
             selection,
             actionKind,
             actionTitle,
+            startLine,
           );
 
           res.writeHead(200);

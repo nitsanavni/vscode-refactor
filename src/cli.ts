@@ -13,11 +13,13 @@ interface ExtractPayload {
   filePath: string;
   extractType: "method" | "variable";
   selection: string;
+  startLine?: number;
 }
 
 interface ActionsPayload {
   filePath: string;
   selection: string;
+  startLine?: number;
 }
 
 interface PerformActionPayload {
@@ -25,11 +27,12 @@ interface PerformActionPayload {
   selection: string;
   actionKind: string;
   actionTitle?: string;
+  startLine?: number;
 }
 
 // Parse command line arguments using minimist
 const args = minimist(Bun.argv.slice(2), {
-  string: ["port", "host", "command", "selection", "kind", "title"],
+  string: ["port", "host", "command", "selection", "kind", "title", "start-line"],
   boolean: ["help"],
   alias: {
     h: "help",
@@ -38,6 +41,7 @@ const args = minimist(Bun.argv.slice(2), {
     s: "selection",
     k: "kind",
     t: "title",
+    l: "start-line",
   },
   default: {
     port: "3141",
@@ -67,14 +71,15 @@ Options:
   -s, --selection <text>  Text selection for refactoring commands
   -k, --kind <kind>       Action kind for perform-action command
   -t, --title <title>     Action title for perform-action command (optional)
+  -l, --start-line <num>  Start searching from this line number (1-based)
 
 Commands:
   health                Check extension health status
   check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
-  extract <file> <type> --selection <text>    Extract method or variable
-  actions [file] [--selection <text>]  Get available code actions (uses stdin as selection if no file)
-  perform-action <file> --selection <text> --kind <kind> [--title <title>]    Execute specific action by kind and optionally title
+  extract <file> <type> --selection <text> [--start-line <num>]    Extract method or variable
+  actions [file] [--selection <text>] [--start-line <num>]  Get available code actions (uses stdin as selection if no file)
+  perform-action <file> --selection <text> --kind <kind> [--title <title>] [--start-line <num>]    Execute specific action by kind and optionally title
 
 Examples:
   bun run cli                           # Execute health command (default)
@@ -85,8 +90,10 @@ Examples:
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
   bun run cli extract ultra-simple.js variable --selection "0"  # Extract "0" to variable
   bun run cli actions ultra-simple.js --selection "0"  # Get available actions for "0"
+  bun run cli actions ultra-simple.js --selection "total" --start-line 19  # Get actions for "total" starting from line 19
   echo "const x = 1;" | bun run cli actions ultra-simple.js  # Use piped text as selection
   bun run cli perform-action ultra-simple.js --selection "0" --kind "refactor.extract.constant"  # Extract "0" to constant
+  bun run cli perform-action ultra-simple.js --selection "total" --kind "refactor.inline.variable" --start-line 21  # Inline "total" at line 21
   echo "0" | bun run cli perform-action ultra-simple.js --kind "refactor.extract.constant"  # Extract "0" to constant using stdin
 `);
 }
@@ -237,6 +244,10 @@ async function main() {
       selection,
     };
 
+    if (args["start-line"]) {
+      payload.startLine = Number.parseInt(args["start-line"], 10);
+    }
+
     await callExtension(host, port, "actions", payload);
   } else if (cmd === "perform-action") {
     const [, filePath] = positionals;
@@ -291,6 +302,10 @@ async function main() {
       actionKind,
       ...(actionTitle && { actionTitle }),
     };
+
+    if (args["start-line"]) {
+      payload.startLine = Number.parseInt(args["start-line"], 10);
+    }
 
     await callExtension(host, port, "perform-action", payload);
   } else if (cmd === "check-version") {
