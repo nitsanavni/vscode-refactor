@@ -964,6 +964,58 @@ export function activate(context: vscode.ExtensionContext) {
           );
         }
       });
+    } else if (req.url === "/command" && req.method === "POST") {
+      console.log("HTTP trigger received for command");
+
+      let body = "";
+      req.on("data", (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on("end", async () => {
+        try {
+          const { command, args, filePath } = JSON.parse(body);
+
+          if (!command) {
+            res.writeHead(400);
+            res.end(
+              JSON.stringify({
+                error: "Missing required field: command",
+              }),
+            );
+            return;
+          }
+
+          // If filePath is provided, open and focus that file first
+          if (filePath) {
+            const uri = vscode.Uri.file(filePath);
+            await vscode.window.showTextDocument(uri, { preview: false });
+            console.log(`Focused file: ${filePath} before executing command`);
+          }
+
+          const result = await vscode.commands.executeCommand(
+            command,
+            ...(args || []),
+          );
+
+          res.writeHead(200);
+          res.end(
+            JSON.stringify({
+              success: true,
+              message: `Command "${command}" executed${filePath ? ` on ${filePath}` : ""}`,
+              result: result || null,
+            }),
+          );
+        } catch (error) {
+          console.error("Command error:", error);
+          res.writeHead(500);
+          res.end(
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          );
+        }
+      });
     } else if (req.url === "/health" && req.method === "GET") {
       res.writeHead(200);
       res.end(

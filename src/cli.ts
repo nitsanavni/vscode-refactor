@@ -82,6 +82,7 @@ Options:
 Commands:
   health                Check extension health status
   check-version [expected]  Check extension version
+  command <command-name> [file]    Execute any VSCode command on optional file (e.g., undo, redo, saveAll)
   rename <file> <old> <new>    Rename symbol in file
   select <file> --selection <text> [--start-line <num>]    Test selection mechanism (shows what will be selected)
   extract <file> <type> --selection <text> [--start-line <num>]    Extract method or variable
@@ -92,6 +93,9 @@ Examples:
   bun run cli                           # Execute health command (default)
   bun run cli health                    # Check health status
   bun run cli check-version             # Check extension version
+  bun run cli command undo              # Execute undo command (on currently focused file)
+  bun run cli command undo test.js      # Execute undo on specific file
+  bun run cli command redo test.js      # Execute redo on specific file
   bun run cli -p 3142 health            # Use custom port
   bun run cli --command health          # Execute health command
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
@@ -184,6 +188,26 @@ async function main() {
     };
 
     await callExtension(host, port, "rename", payload);
+  } else if (cmd === "command") {
+    const [, commandName, filePath] = positionals;
+
+    if (!commandName) {
+      console.error("Error: command requires <command-name> argument");
+      console.log("Usage: bun run cli command <command-name> [file]");
+      console.log("Examples: bun run cli command undo");
+      console.log("          bun run cli command undo test.js");
+      process.exit(1);
+    }
+
+    const payload: { command: string; filePath?: string } = {
+      command: commandName
+    };
+
+    if (filePath) {
+      payload.filePath = resolveFilePath(filePath);
+    }
+
+    await callExtension(host, port, "command", payload);
   } else if (cmd === "extract") {
     const [, filePath, extractType] = positionals;
     const selection = args.selection;
