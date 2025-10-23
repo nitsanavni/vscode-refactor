@@ -264,6 +264,56 @@ async function findTextInDocument(
   }
 }
 
+// Test selection mechanism - returns details about what was selected
+async function testSelection(
+  filePath: string,
+  selection: string,
+  startLine?: number,
+): Promise<{
+  success: boolean;
+  found: boolean;
+  startLine?: number;
+  endLine?: number;
+  startChar?: number;
+  endChar?: number;
+  selectedText?: string;
+  message: string;
+}> {
+  try {
+    const uri = vscode.Uri.file(filePath);
+    await vscode.window.showTextDocument(uri);
+
+    const range = await findTextInDocument(uri, selection, startLine);
+    if (!range) {
+      return {
+        success: false,
+        found: false,
+        message: `Selection "${selection}" not found in file`,
+      };
+    }
+
+    const document = await vscode.workspace.openTextDocument(uri);
+    const selectedText = document.getText(range);
+
+    return {
+      success: true,
+      found: true,
+      startLine: range.start.line + 1, // Convert to 1-based
+      endLine: range.end.line + 1,
+      startChar: range.start.character,
+      endChar: range.end.character,
+      selectedText,
+      message: `Found selection at line ${range.start.line + 1}:${range.start.character}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      found: false,
+      message: `Error: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
 // Get available code actions for a text selection
 async function getAvailableActions(
   filePath: string,
@@ -281,6 +331,13 @@ async function getAvailableActions(
     command: string | null;
   }>;
   message: string;
+  selectionInfo?: {
+    startLine: number;
+    endLine: number;
+    startChar: number;
+    endChar: number;
+    selectedText: string;
+  };
 }> {
   try {
     console.log(
@@ -302,6 +359,9 @@ async function getAvailableActions(
         message: `Selection "${selection}" not found in file`,
       };
     }
+
+    const document = await vscode.workspace.openTextDocument(uri);
+    const selectedText = document.getText(range);
 
     console.log(
       `Found selection at range: ${range.start.line}:${range.start.character} to ${range.end.line}:${range.end.character}`,
@@ -358,6 +418,13 @@ async function getAvailableActions(
       success: true,
       actions: formattedActions,
       message: `Found ${formattedActions.length} available actions for selection "${selection}"`,
+      selectionInfo: {
+        startLine: range.start.line + 1, // Convert to 1-based
+        endLine: range.end.line + 1,
+        startChar: range.start.character,
+        endChar: range.end.character,
+        selectedText,
+      },
     };
   } catch (error) {
     console.error("Error in getAvailableActions:", error);
@@ -798,10 +865,47 @@ export function activate(context: vscode.ExtensionContext) {
               success: result.success,
               message: result.message,
               actions: result.actions,
+              selectionInfo: result.selectionInfo,
             }),
           );
         } catch (error) {
           console.error("Actions error:", error);
+          res.writeHead(500);
+          res.end(
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+            }),
+          );
+        }
+      });
+    } else if (req.url === "/select" && req.method === "POST") {
+      console.log("HTTP trigger received for select");
+
+      let body = "";
+      req.on("data", (chunk) => {
+        body += chunk.toString();
+      });
+
+      req.on("end", async () => {
+        try {
+          const { filePath, selection, startLine } = JSON.parse(body);
+
+          if (!filePath || !selection) {
+            res.writeHead(400);
+            res.end(
+              JSON.stringify({
+                error: "Missing required fields: filePath, selection",
+              }),
+            );
+            return;
+          }
+
+          const result = await testSelection(filePath, selection, startLine);
+
+          res.writeHead(200);
+          res.end(JSON.stringify(result));
+        } catch (error) {
+          console.error("Select error:", error);
           res.writeHead(500);
           res.end(
             JSON.stringify({

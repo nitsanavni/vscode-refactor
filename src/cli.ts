@@ -22,6 +22,12 @@ interface ActionsPayload {
   startLine?: number;
 }
 
+interface SelectPayload {
+  filePath: string;
+  selection: string;
+  startLine?: number;
+}
+
 interface PerformActionPayload {
   filePath: string;
   selection: string;
@@ -77,6 +83,7 @@ Commands:
   health                Check extension health status
   check-version [expected]  Check extension version
   rename <file> <old> <new>    Rename symbol in file
+  select <file> --selection <text> [--start-line <num>]    Test selection mechanism (shows what will be selected)
   extract <file> <type> --selection <text> [--start-line <num>]    Extract method or variable
   actions [file] [--selection <text>] [--start-line <num>]  Get available code actions (uses stdin as selection if no file)
   perform-action <file> --selection <text> --kind <kind> [--title <title>] [--start-line <num>]    Execute specific action by kind and optionally title
@@ -88,6 +95,8 @@ Examples:
   bun run cli -p 3142 health            # Use custom port
   bun run cli --command health          # Execute health command
   bun run cli rename src/app.ts oldName newName  # Rename symbol in file
+  bun run cli select test.js --selection "total"  # Test what gets selected for "total"
+  bun run cli select test.js --selection "total" --start-line 19  # Test selection from line 19
   bun run cli extract ultra-simple.js variable --selection "0"  # Extract "0" to variable
   bun run cli actions ultra-simple.js --selection "0"  # Get available actions for "0"
   bun run cli actions ultra-simple.js --selection "total" --start-line 19  # Get actions for "total" starting from line 19
@@ -249,6 +258,43 @@ async function main() {
     }
 
     await callExtension(host, port, "actions", payload);
+  } else if (cmd === "select") {
+    const [, filePath] = positionals;
+    let selection = args.selection;
+
+    if (hasStdin && stdinInput) {
+      if (!filePath) {
+        console.error(
+          "Error: file argument required when using stdin as selection",
+        );
+        console.log("Usage: echo 'selection' | bun run cli select <file>");
+        process.exit(1);
+      }
+      selection = stdinInput;
+    }
+
+    if (!filePath) {
+      console.error("Error: select command requires <file> argument");
+      console.log("Usage: bun run cli select <file> --selection <text>");
+      process.exit(1);
+    }
+
+    if (!selection) {
+      console.error("Error: --selection <text> is required");
+      console.log("Usage: bun run cli select <file> --selection <text>");
+      process.exit(1);
+    }
+
+    const payload: SelectPayload = {
+      filePath: resolveFilePath(filePath),
+      selection,
+    };
+
+    if (args["start-line"]) {
+      payload.startLine = Number.parseInt(args["start-line"], 10);
+    }
+
+    await callExtension(host, port, "select", payload);
   } else if (cmd === "perform-action") {
     const [, filePath] = positionals;
     let selection = args.selection;
